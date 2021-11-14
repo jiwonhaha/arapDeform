@@ -1,7 +1,7 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include "ARAPSolver.h"
 #include "Mesh.h"
-#include "MouseManager.h"
+#include "InterfaceManager.h"
 
 int main(int argc, char *argv[])
 {
@@ -30,24 +30,30 @@ int main(int argc, char *argv[])
                 2,6,8,
                 2,8,4).finished().array()-1;
 
-    // Setup the ARAP related objects
-    MouseManager mouseManager = MouseManager();
-
-    // Plot the mesh
+    // Setup the interface
     igl::opengl::glfw::Viewer viewer;
-    viewer.callback_mouse_down = [&mesh, &mouseManager](igl::opengl::glfw::Viewer& viewer, int, int)->bool
+    InterfaceManager interfaceManager = InterfaceManager();
+    viewer.callback_mouse_down = [&interfaceManager, &mesh](igl::opengl::glfw::Viewer& viewer, int, int modifier)->bool
     {
-        return mouseManager.onMousePressed(viewer, mesh);
-    };
-    viewer.callback_mouse_up = [&mouseManager](igl::opengl::glfw::Viewer& viewer, int, int)->bool
-    {
-        return mouseManager.onMouseReleased();
-    };
-    viewer.callback_mouse_move = [&mouseManager](igl::opengl::glfw::Viewer& viewer, int, int)->bool
-    {
-        mouseManager.onMouseMoved();
+        interfaceManager.onMousePressed(viewer, mesh, modifier & 0x00000001);
         return false;
     };
+    viewer.callback_mouse_up = [&interfaceManager](igl::opengl::glfw::Viewer& viewer, int, int)->bool
+    {
+        interfaceManager.onMouseReleased();
+        return false;
+    };
+    viewer.callback_mouse_move = [&interfaceManager](igl::opengl::glfw::Viewer& viewer, int, int modifier)->bool
+    {
+        return interfaceManager.onMouseMoved();
+    };
+    viewer.callback_key_down = [&interfaceManager, &mesh](igl::opengl::glfw::Viewer& viewer, unsigned char key, int)->bool
+    {
+        interfaceManager.onKeyPressed(viewer, mesh, key);
+        return false;
+    };
+
+    // Plot the mesh
     viewer.data().set_mesh(mesh.V, mesh.F);
     viewer.data().set_face_based(true);
     viewer.launch();
