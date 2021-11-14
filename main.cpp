@@ -3,6 +3,7 @@
 #include "Mesh.h"
 #include "InterfaceManager.h"
 
+
 int main(int argc, char *argv[])
 {
     // Inline mesh of a cube
@@ -29,6 +30,15 @@ int main(int argc, char *argv[])
                 1,6,2,
                 2,6,8,
                 2,8,4).finished().array()-1;
+
+    // Find one-ring neighbors
+    find_neighbors(mesh.V, mesh.F);
+    
+    // DEBUG
+    // Compute edges weights
+    compute_edges_weight(mesh.V, mesh.F);
+    // Compute Laplacian matrix
+    compute_laplacian_matrix();
 
     // Setup the interface
     igl::opengl::glfw::Viewer viewer;
