@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     // Compute Laplacian matrix
     compute_laplacian_matrix();*/
     MatrixXd new_V = mesh.V;
-    MatrixXd C = mesh.V;
+    std::list<std::pair<int, Vector3d>> C;
     arap(mesh.V, mesh.F, C, new_V);
 
     // Setup the interface

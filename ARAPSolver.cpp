@@ -65,14 +65,15 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
         double a120 = acos(-v2.dot(v3) / (v2.norm() * v3.norm()));
 
         // Add the angles
-        weights(F(i, 0), F(i, 1)) += cos(a120) / sin(a120);
-        weights(F(i, 1), F(i, 0)) += cos(a120) / sin(a120);
+        // J'ai dû mettre abs pour que ca marche... réflechir à pourquoi
+        weights(F(i, 0), F(i, 1)) += abs(cos(a120) / sin(a120));
+        weights(F(i, 1), F(i, 0)) += abs(cos(a120) / sin(a120));
 
-        weights(F(i, 1), F(i, 2)) += cos(a201) / sin(a201);
-        weights(F(i, 2), F(i, 1)) += cos(a201) / sin(a201);
+        weights(F(i, 1), F(i, 2)) += abs(cos(a201) / sin(a201));
+        weights(F(i, 2), F(i, 1)) += abs(cos(a201) / sin(a201));
 
-        weights(F(i, 2), F(i, 0)) += cos(a012) / sin(a012);
-        weights(F(i, 0), F(i, 2)) += cos(a012) / sin(a012);
+        weights(F(i, 2), F(i, 0)) += abs(cos(a012) / sin(a012));
+        weights(F(i, 0), F(i, 2)) += abs(cos(a012) / sin(a012));
     }
 
     // Divide all the weights by 2
@@ -82,9 +83,17 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
     //std::cout << weights << std::endl;
 }
 
-void compute_laplacian_matrix() {
+void compute_laplacian_matrix(std::list<std::pair<int, Vector3d>> C) {
     L = weights;
 
+    // Add constraints
+    for (std::list<std::pair<int, Vector3d>>::iterator it = C.begin(); it != C.end(); ++it) {
+        int index = (*it).first;
+        L.row(index) = VectorXd::Zero(L.cols());
+        L(index, index) = 1;
+    }
+
+    // Add diagonal value
     for (int i = 0; i < L.rows(); i++) {
         L(i, i) = -L.row(i).sum();
     }
@@ -98,6 +107,12 @@ MatrixXd compute_covariance_matrix(MatrixXd V, MatrixXd new_V, int index) {
 
     // Retrieve neighbors of v
     std::list<int> neighbors_v = neighbors[index];   
+
+    std::cout << "neighbors = { ";
+    for (int n : neighbors_v) {
+            std::cout << n << ", ";
+    }
+    std::cout << "}; \n";
 
     MatrixXd P_init = MatrixXd::Zero(V.cols(), neighbors_v.size());
     MatrixXd P_new = MatrixXd::Zero(V.cols(), neighbors_v.size());
@@ -130,6 +145,11 @@ MatrixXd compute_covariance_matrix(MatrixXd V, MatrixXd new_V, int index) {
         D.diagonal()[k] = weights(index, *it);
     }
 
+
+
+    Si = P_init * D * P_new.transpose();
+
+    // DEBUG
     std::cout << "D" << std::endl;
     std::cout << D.diagonal() << std::endl;
 
@@ -139,10 +159,8 @@ MatrixXd compute_covariance_matrix(MatrixXd V, MatrixXd new_V, int index) {
     std::cout << "P_new" << std::endl;
     std::cout << P_new << std::endl;
 
-    Si = P_init * D * P_new.transpose();
-
-    std::cout << "Si" << std::endl;
-    std::cout << Si << std::endl;
+    /*std::cout << "Si" << std::endl;
+    std::cout << Si << std::endl;*/
 
     return Si;
 }
@@ -153,7 +171,7 @@ MatrixXd compute_covariance_matrix(MatrixXd V, MatrixXd new_V, int index) {
  *
  * Out : Update V 
  */
-void arap(const MatrixXd &V, const MatrixXi &F, const MatrixXd &C, MatrixXd new_V) {
+void arap(const MatrixXd &V, const MatrixXi &F, const std::list<std::pair<int, Vector3d>> C, MatrixXd new_V) {
     // Initialize new V vertices
     // Do it here or before ?
 
@@ -161,28 +179,26 @@ void arap(const MatrixXd &V, const MatrixXi &F, const MatrixXd &C, MatrixXd new_
     MatrixXd V_centered = V.rowwise() - V.colwise().mean();
     MatrixXd new_V_centered = new_V.rowwise() - new_V.colwise().mean();
 
+    std::cout << V.colwise().mean() << std::endl;
+    std::cout << new_V.colwise().mean() << std::endl;
+
     // Compute weights
     compute_edges_weight(V, F);
 
     // Precompute Laplacian-Beltrami matrix
-    compute_laplacian_matrix();
+    compute_laplacian_matrix(C);
 
-    // Find optimal R
+    // ITERATE
+
+    // Find optimal Ri for each cell
     std::vector<MatrixXd> R(V.rows()); // Matrix of local rotations
     for (int i = 0; i < V.rows(); i++) {
         MatrixXd Si = compute_covariance_matrix(V_centered, new_V_centered, i);
 
         JacobiSVD<MatrixXd> svd(Si, ComputeThinU | ComputeThinV);
 
-        MatrixXd Ri;
-        if ((svd.matrixV() * svd.matrixU().transpose()).determinant() > 0) {
-            Ri = svd.matrixV() * svd.matrixU().transpose();
-        }
-        else {
-            DiagonalMatrix<double, 3> D(1, 1, -1);
-            Ri = svd.matrixV() * D * svd.matrixU().transpose();
-        }
-        
+        DiagonalMatrix<double, 3> D(1, 1, (svd.matrixV() * svd.matrixU().transpose()).determinant());
+        MatrixXd Ri = svd.matrixV() * D * svd.matrixU().transpose();
 
         // Store Ri
         R[i] = Ri;
