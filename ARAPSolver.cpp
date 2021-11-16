@@ -33,7 +33,7 @@ void find_neighbors(const MatrixXd V, const MatrixXi F) {
 
     // DEBUG
     // Print out the vector 
-    std::cout << "neighbors = { ";
+    /*std::cout << "neighbors = { ";
     for (std::list<int> neighbor : neighbors) {
         std::cout << "{ ";
         for (int n : neighbor) {
@@ -41,7 +41,7 @@ void find_neighbors(const MatrixXd V, const MatrixXi F) {
         }
         std::cout << "}; \n";
     }
-    std::cout << "}; \n";
+    std::cout << "}; \n";*/
 }
 
 /* Compute weights wij
@@ -79,7 +79,7 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
     weights = (float) 1 / 2 * weights;
 
     // DEBUG
-    std::cout << weights << std::endl;
+    //std::cout << weights << std::endl;
 }
 
 void compute_laplacian_matrix() {
@@ -90,7 +90,61 @@ void compute_laplacian_matrix() {
     }
 
     // DEBUG
-    std::cout << L << std::endl;
+    //std::cout << L << std::endl;
+}
+
+MatrixXd compute_covariance_matrix(MatrixXd V, MatrixXd new_V, int index) {
+    MatrixXd Si(V.cols(), V.cols());
+
+    // Retrieve neighbors of v
+    std::list<int> neighbors_v = neighbors[index];   
+
+    MatrixXd P_init = MatrixXd::Zero(V.cols(), neighbors_v.size());
+    MatrixXd P_new = MatrixXd::Zero(V.cols(), neighbors_v.size());
+    DiagonalMatrix<double, Eigen::Dynamic> D(neighbors_v.size());
+
+    // Vertex of initial and final mesh
+    Vector3d v_init = V.row(index);
+    Vector3d v_new = new_V.row(index);
+
+    // For each neighbor compute edges (in initial and result meshes)
+    int k = 0;
+    for (std::list<int>::iterator it = neighbors_v.begin(); it != neighbors_v.end(); ++it, ++k) {
+        // Initial mesh
+        Vector3d neighbor_init = V.row(*it);
+        Vector3d edge_init = v_init - neighbor_init;
+        P_init.col(k) = edge_init;
+
+        /*std::cout << "edge_init" << std::endl;
+        std::cout << edge_init << std::endl;*/
+
+        // Updated mesh
+        Vector3d neighbor_new = new_V.row(*it);
+        Vector3d edge_new = v_new - neighbor_new;
+        P_new.col(k) = edge_new;
+
+        /*std::cout << "edge_new" << std::endl;
+        std::cout << edge_new << std::endl;*/
+
+        // Diagonal mesh
+        D.diagonal()[k] = weights(index, *it);
+    }
+
+    std::cout << "D" << std::endl;
+    std::cout << D.diagonal() << std::endl;
+
+    std::cout << "P_init" << std::endl;
+    std::cout << P_init << std::endl;
+
+    std::cout << "P_new" << std::endl;
+    std::cout << P_new << std::endl;
+
+    Si = P_init * D * P_new.transpose();
+
+    std::cout << "Si" << std::endl;
+    std::cout << Si << std::endl;
+
+    return Si;
 }
 
 /* Apply arap algo for one iteration
@@ -99,7 +153,14 @@ void compute_laplacian_matrix() {
  *
  * Out : Update V 
  */
-void arap(const MatrixXd &V, const MatrixXi F, const MatrixXd &C, MatrixXd new_V) {
+void arap(const MatrixXd &V, const MatrixXi &F, const MatrixXd &C, MatrixXd new_V) {
+    // Initialize new V vertices
+    // Do it here or before ?
+
+    // Center meshes
+    MatrixXd V_centered = V.rowwise() - V.colwise().mean();
+    MatrixXd new_V_centered = new_V.rowwise() - new_V.colwise().mean();
+
     // Compute weights
     compute_edges_weight(V, F);
 
@@ -107,6 +168,29 @@ void arap(const MatrixXd &V, const MatrixXi F, const MatrixXd &C, MatrixXd new_V
     compute_laplacian_matrix();
 
     // Find optimal R
+    std::vector<MatrixXd> R(V.rows()); // Matrix of local rotations
+    for (int i = 0; i < V.rows(); i++) {
+        MatrixXd Si = compute_covariance_matrix(V_centered, new_V_centered, i);
+
+        JacobiSVD<MatrixXd> svd(Si, ComputeThinU | ComputeThinV);
+
+        MatrixXd Ri;
+        if ((svd.matrixV() * svd.matrixU().transpose()).determinant() > 0) {
+            Ri = svd.matrixV() * svd.matrixU().transpose();
+        }
+        else {
+            DiagonalMatrix<double, 3> D(1, 1, -1);
+            Ri = svd.matrixV() * D * svd.matrixU().transpose();
+        }
+        
+
+        // Store Ri
+        R[i] = Ri;
+
+        // DEBUG
+        std::cout << Ri << std::endl;
+    }
+    
 
     // Find optimal p'
 }

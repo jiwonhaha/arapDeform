@@ -35,10 +35,13 @@ int main(int argc, char *argv[])
     find_neighbors(mesh.V, mesh.F);
     
     // DEBUG
-    // Compute edges weights
+    /*// Compute edges weights
     compute_edges_weight(mesh.V, mesh.F);
     // Compute Laplacian matrix
-    compute_laplacian_matrix();
+    compute_laplacian_matrix();*/
+    MatrixXd new_V = mesh.V;
+    MatrixXd C = mesh.V;
+    arap(mesh.V, mesh.F, C, new_V);
 
     // Setup the interface
     igl::opengl::glfw::Viewer viewer;
