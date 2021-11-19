@@ -42,10 +42,26 @@ void InterfaceManager::onMousePressed(igl::opengl::glfw::Viewer& viewer, Mesh& m
             if (bc[i] > bc[closestVertex])
                 closestVertex = i;
 
-        if (!isShiftPressed)
+        if (isShiftPressed)
+        {
+            int selectedVertexIndex = mesh.F.row(fid)[closestVertex];
+            int indexOnVectorIfExists = -1;
+            for (int i = 0; i < selection.size(); i++)
+                if (selection[i] == selectedVertexIndex)
+                {
+                    indexOnVectorIfExists = i;
+                    break;
+                }
+            if (indexOnVectorIfExists < 0)
+                selection.push_back(selectedVertexIndex);   // not in selection : add it
+            else
+                selection.erase(std::next(selection.begin(), indexOnVectorIfExists));   // already in the selection : remove it
+        }
+        else
+        {
             selection.clear();
-
-        selection.push_back(mesh.F.row(fid)[closestVertex]);
+            selection.push_back(mesh.F.row(fid)[closestVertex]);
+        }
     }
     else if (isShiftPressed)
         selection.clear();
@@ -83,9 +99,17 @@ void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mes
         displaySelectedPoints(viewer, mesh);
     }
     else if (key == 'C')
-        int a = 1;  // add selected points to control points
+    {
+        for (const auto& i : selection)
+            mesh.addControlPoint(i);
+        mesh.printControlPoints();
+    }
     else if (key == 'R')
-        int a = 1;  // remove selected points of control points
+    {
+        for (const auto& i : selection)
+            mesh.removeControlPoint(i);
+        mesh.printControlPoints();
+    }
     else if (key == 'X')
         int a = 1;  // set move axis to X
     else if (key == 'Y')

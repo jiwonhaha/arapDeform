@@ -4,7 +4,22 @@
 
 struct Mesh
 {
+private:
+	std::vector<ControlPoint> controlPoints;
+
+public:
 	Eigen::MatrixXd V;
 	Eigen::MatrixXi F;
-	std::vector<ControlPoint> controlPoints;
+
+	const std::vector<ControlPoint>& getControlPoints() { return controlPoints; }
+	std::vector<int> getControlPointsIndex();
+	Eigen::MatrixXd getControlPointsWantedPosition();
+	bool isAControlPoint(int vertexIndex);
+	ControlPoint* getControlPoint(int vertexIndex);		// be careful : changing controlPoints vector may change its memory location => would invalidate the pointer
+	
+	void addControlPoint(int vertexIndex);
+	void addControlPoint(int vertexIndex, Eigen::RowVector3d position);
+	void removeControlPoint(int vertexIndex);
+
+	void printControlPoints();
 };
