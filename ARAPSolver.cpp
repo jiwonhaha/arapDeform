@@ -55,30 +55,33 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
 
     for (int i = 0; i < F.rows(); i++) {
         // Compute edges vectors CCW
-        Vector3d v1 = V.row(F(i, 0)) - V.row(F(i, 1));
+        Vector3d v1 = V.row(F(i, 1)) - V.row(F(i, 0));
         Vector3d v2 = V.row(F(i, 2)) - V.row(F(i, 1));
         Vector3d v3 = V.row(F(i, 0)) - V.row(F(i, 2));
 
         // Compute the angles
         double a201 = acos(v1.dot(-v3) / (v1.norm() * v3.norm()));
-        double a012 = acos(-v1.dot(-v2) / (v1.norm() * v2.norm()));
-        double a120 = acos(-v2.dot(v3) / (v2.norm() * v3.norm()));
+        double a012 = acos(-v1.dot(v2) / (v1.norm() * v2.norm()));
+        double a120 = acos(-v2.dot(v3) / (v2.norm() * v3.norm())); //seems ok
 
         // Add the angles
         // J'ai dû mettre abs pour que ca marche... réflechir à pourquoi
 
-        /*std::cout << a120 * 180 / 3.14 << std::endl;
+        /*std::cout << "a120" << std::endl;
+        std::cout << a120 * 180 / 3.14 << std::endl;
+        std::cout << "a201" << std::endl;
         std::cout << a201 * 180 / 3.14 << std::endl;
+        std::cout << "a012" << std::endl;
         std::cout << a012 * 180 / 3.14 << std::endl;*/
 
-        weights(F(i, 0), F(i, 1)) += abs(cos(a120) / sin(a120));
-        weights(F(i, 1), F(i, 0)) += abs(cos(a120) / sin(a120));
+        weights(F(i, 0), F(i, 1)) += cos(a120) / sin(a120);
+        weights(F(i, 1), F(i, 0)) += cos(a120) / sin(a120);
 
-        weights(F(i, 1), F(i, 2)) += abs(cos(a201) / sin(a201));
-        weights(F(i, 2), F(i, 1)) += abs(cos(a201) / sin(a201));
+        weights(F(i, 1), F(i, 2)) += cos(a201) / sin(a201);
+        weights(F(i, 2), F(i, 1)) += cos(a201) / sin(a201);
 
-        weights(F(i, 2), F(i, 0)) += abs(cos(a012) / sin(a012));
-        weights(F(i, 0), F(i, 2)) += abs(cos(a012) / sin(a012));
+        weights(F(i, 2), F(i, 0)) += cos(a012) / sin(a012);
+        weights(F(i, 0), F(i, 2)) += cos(a012) / sin(a012);
     }
 
     // Divide all the weights by 2
