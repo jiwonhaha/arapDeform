@@ -78,8 +78,8 @@ int main(int argc, char *argv[])
     };
 
     // Plot the mesh
-    //viewer.data().set_mesh(mesh.V, mesh.F);
-    viewer.data().set_mesh(new_V, mesh.F);
+    viewer.data().set_mesh(mesh.V, mesh.F);
+    //viewer.data().set_mesh(new_V, mesh.F);
     viewer.data().set_face_based(true);
     viewer.launch();
 }
