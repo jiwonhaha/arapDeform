@@ -39,7 +39,10 @@ int main(int argc, char *argv[])
     compute_edges_weight(mesh.V, mesh.F);
     // Compute Laplacian matrix
     compute_laplacian_matrix();*/
-    MatrixXd R(3, 3);
+
+    MatrixXd new_V(mesh.V.rows(), mesh.V.cols());
+
+    /*MatrixXd R(3, 3);
     R << cos(3.14 / 2), 0, 0,
         0, sin(3.14 / 2), 0,
         0, 0, 1;
@@ -47,7 +50,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < mesh.V.rows(); i++) {
         new_V.row(i) = mesh.V.row(i) * R.transpose();
     }
-    std::cout << new_V << std::endl;
+    std::cout << new_V << std::endl;*/
     std::list<std::pair<int, Vector3d>> C;
     arap(mesh.V, mesh.F, C, new_V);
 
