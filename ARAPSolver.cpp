@@ -66,6 +66,11 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
 
         // Add the angles
         // J'ai dû mettre abs pour que ca marche... réflechir à pourquoi
+
+        /*std::cout << a120 * 180 / 3.14 << std::endl;
+        std::cout << a201 * 180 / 3.14 << std::endl;
+        std::cout << a012 * 180 / 3.14 << std::endl;*/
+
         weights(F(i, 0), F(i, 1)) += abs(cos(a120) / sin(a120));
         weights(F(i, 1), F(i, 0)) += abs(cos(a120) / sin(a120));
 
@@ -108,11 +113,11 @@ MatrixXd compute_covariance_matrix(MatrixXd V, MatrixXd new_V, int index) {
     // Retrieve neighbors of v
     std::list<int> neighbors_v = neighbors[index];   
 
-    std::cout << "neighbors = { ";
+    /*std::cout << "neighbors = { ";
     for (int n : neighbors_v) {
             std::cout << n << ", ";
     }
-    std::cout << "}; \n";
+    std::cout << "}; \n";*/
 
     MatrixXd P_init = MatrixXd::Zero(V.cols(), neighbors_v.size());
     MatrixXd P_new = MatrixXd::Zero(V.cols(), neighbors_v.size());
@@ -150,14 +155,14 @@ MatrixXd compute_covariance_matrix(MatrixXd V, MatrixXd new_V, int index) {
     Si = P_init * D * P_new.transpose();
 
     // DEBUG
-    std::cout << "D" << std::endl;
+    /*std::cout << "D" << std::endl;
     std::cout << D.diagonal() << std::endl;
 
     std::cout << "P_init" << std::endl;
     std::cout << P_init << std::endl;
 
     std::cout << "P_new" << std::endl;
-    std::cout << P_new << std::endl;
+    std::cout << P_new << std::endl;*/
 
     /*std::cout << "Si" << std::endl;
     std::cout << Si << std::endl;*/
@@ -179,8 +184,8 @@ void arap(const MatrixXd &V, const MatrixXi &F, const std::list<std::pair<int, V
     MatrixXd V_centered = V.rowwise() - V.colwise().mean();
     MatrixXd new_V_centered = new_V.rowwise() - new_V.colwise().mean();
 
-    std::cout << V.colwise().mean() << std::endl;
-    std::cout << new_V.colwise().mean() << std::endl;
+    /*std::cout << V.colwise().mean() << std::endl;
+    std::cout << new_V.colwise().mean() << std::endl;*/
 
     // Compute weights
     compute_edges_weight(V, F);

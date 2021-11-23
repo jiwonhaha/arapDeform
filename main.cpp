@@ -42,17 +42,21 @@ int main(int argc, char *argv[])
 
     MatrixXd new_V(mesh.V.rows(), mesh.V.cols());
 
-    /*MatrixXd R(3, 3);
-    R << cos(3.14 / 2), 0, 0,
-        0, sin(3.14 / 2), 0,
+    MatrixXd R(3, 3);
+    float theta = (float) 3.14 / 4;
+    R << cos(theta), -sin(theta), 0,
+        sin(theta), cos(theta), 0,
         0, 0, 1;
-    MatrixXd new_V(mesh.V.rows(), mesh.V.cols());
+
+    std::cout << R << std::endl;
+
     for (int i = 0; i < mesh.V.rows(); i++) {
         new_V.row(i) = mesh.V.row(i) * R.transpose();
     }
-    std::cout << new_V << std::endl;*/
+
+    std::cout << new_V << std::endl;
     std::list<std::pair<int, Vector3d>> C;
-    arap(mesh.V, mesh.F, C, new_V);
+    //arap(mesh.V, mesh.F, C, new_V);
 
     // Setup the interface
     igl::opengl::glfw::Viewer viewer;
@@ -78,8 +82,8 @@ int main(int argc, char *argv[])
     };
 
     // Plot the mesh
-    viewer.data().set_mesh(mesh.V, mesh.F);
-    //viewer.data().set_mesh(new_V, mesh.F);
+    //viewer.data().set_mesh(mesh.V, mesh.F);
+    viewer.data().set_mesh(new_V, mesh.F);
     viewer.data().set_face_based(true);
     viewer.launch();
 }
