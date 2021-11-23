@@ -11,15 +11,17 @@ public:
 	Eigen::MatrixXd V;
 	Eigen::MatrixXi F;
 
-	const std::vector<ControlPoint>& getControlPoints() { return controlPoints; }
-	std::vector<int> getControlPointsIndex();
-	Eigen::MatrixXd getControlPointsWantedPosition();
-	bool isAControlPoint(int vertexIndex);
+	Eigen::MatrixXd getVerticesFromIndex(const std::vector<int>& indexes) const;
+
+	const std::vector<ControlPoint>& getControlPoints() const { return controlPoints; }
+	std::vector<int> getControlPointsIndex() const;
+	Eigen::MatrixXd getControlPointsWantedPosition() const;
+	bool isAControlPoint(int vertexIndex) const;
 	ControlPoint* getControlPoint(int vertexIndex);		// be careful : changing controlPoints vector may change its memory location => would invalidate the pointer
 	
 	void addControlPoint(int vertexIndex);
 	void addControlPoint(int vertexIndex, Eigen::RowVector3d position);
 	void removeControlPoint(int vertexIndex);
 
-	void printControlPoints();
+	void printControlPoints() const;
 };

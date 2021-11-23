@@ -1,6 +1,15 @@
 #include "Mesh.h"
 
-std::vector<int> Mesh::getControlPointsIndex()
+
+Eigen::MatrixXd Mesh::getVerticesFromIndex(const std::vector<int>& indexes) const
+{
+	Eigen::MatrixXd verts = Eigen::MatrixXd::Zero(indexes.size(), 3);
+	for (int i = 0; i < verts.rows(); i++)
+		verts.row(i) = V.row(indexes[i]);
+	return verts;
+}
+
+std::vector<int> Mesh::getControlPointsIndex() const
 {
 	std::vector<int> indexes;
 	indexes.reserve(controlPoints.size());
@@ -9,7 +18,7 @@ std::vector<int> Mesh::getControlPointsIndex()
 	return indexes;
 }
 
-Eigen::MatrixXd Mesh::getControlPointsWantedPosition()
+Eigen::MatrixXd Mesh::getControlPointsWantedPosition() const
 {
 	Eigen::MatrixXd cpPosition = Eigen::MatrixXd::Zero(controlPoints.size(), 3);
 	for (int i = 0; i < cpPosition.rows(); i++)
@@ -17,7 +26,7 @@ Eigen::MatrixXd Mesh::getControlPointsWantedPosition()
 	return cpPosition;
 }
 
-bool Mesh::isAControlPoint(int vertexIndex)
+bool Mesh::isAControlPoint(int vertexIndex) const
 {
 	for (const auto& cp : controlPoints)
 		if (cp.vertexIndexInMesh == vertexIndex)
@@ -75,7 +84,7 @@ void Mesh::removeControlPoint(int vertexIndex)
 		controlPoints.erase(std::next(controlPoints.begin(), index));
 }
 
-void Mesh::printControlPoints()
+void Mesh::printControlPoints() const
 {
 	std::cout << "Control Points:\n";
 	for (auto& cp : controlPoints)
