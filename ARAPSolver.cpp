@@ -62,11 +62,10 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
         // Compute the angles
         double a201 = acos(v1.dot(-v3) / (v1.norm() * v3.norm()));
         double a012 = acos(-v1.dot(v2) / (v1.norm() * v2.norm()));
-        double a120 = acos(-v2.dot(v3) / (v2.norm() * v3.norm())); //seems ok
+        double a120 = acos(-v2.dot(v3) / (v2.norm() * v3.norm())); 
 
-        // Add the angles
-        // J'ai dû mettre abs pour que ca marche... réflechir à pourquoi
-
+        
+        // DEBUG
         /*std::cout << "a120" << std::endl;
         std::cout << a120 * 180 / 3.14 << std::endl;
         std::cout << "a201" << std::endl;
@@ -74,6 +73,7 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
         std::cout << "a012" << std::endl;
         std::cout << a012 * 180 / 3.14 << std::endl;*/
 
+        // Add the angles
         weights(F(i, 0), F(i, 1)) += cos(a120) / sin(a120);
         weights(F(i, 1), F(i, 0)) += cos(a120) / sin(a120);
 
@@ -91,19 +91,23 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
     //std::cout << weights << std::endl;
 }
 
-void compute_laplacian_matrix(std::list<std::pair<int, Vector3d>> C) {
+void compute_laplacian_matrix(const std::vector<ControlPoint> C) {
     L = weights;
 
     // Add constraints
-    for (std::list<std::pair<int, Vector3d>>::iterator it = C.begin(); it != C.end(); ++it) {
-        int index = (*it).first;
+    for (ControlPoint c : C) {
+        int index = c.vertexIndexInMesh;
         L.row(index) = VectorXd::Zero(L.cols());
+        L.col(index) = VectorXd::Zero(L.rows());
         L(index, index) = 1;
     }
 
     // Add diagonal value
     for (int i = 0; i < L.rows(); i++) {
-        L(i, i) = -L.row(i).sum();
+        // If it's not a constraint point
+        if (L(i, i) != 1) {
+            L(i, i) = -L.row(i).sum();
+        }
     }
 
     // DEBUG
@@ -173,14 +177,53 @@ MatrixXd compute_covariance_matrix(MatrixXd V, MatrixXd new_V, int index) {
     return Si;
 }
 
+MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R) {
+
+    MatrixXd b = MatrixXd::Zero(V.rows(), V.cols());
+
+    for (int i = 0; i < V.rows(); i++) {
+        VectorXd vi = V.row(i);
+
+        // Retrieve neighbors of v
+        std::list<int> neighbors_v = neighbors[i];
+
+        // Rotation matrix of i-th vertex
+        MatrixXd Ri = R[i];
+
+        // For each neighbor add the corresponding term
+        // TODO: check if constraint
+
+        for (std::list<int>::iterator it = neighbors_v.begin(); it != neighbors_v.end(); ++it) {
+            // Neighbor position
+            VectorXd neighbor = V.row(*it);
+
+            // Weight of the edge
+            double wij = weights(i, *it);
+
+            // Neighbor Rotation matrix
+            MatrixXd Rj = R[*it];
+
+            // Add the term (+= ou -= ?? mettre transpose ??)
+            /*std::cout << (vi - neighbor).rows() << std::endl;
+            std::cout << (vi - neighbor).cols() << std::endl;
+            std::cout << vi - neighbor << std::endl;
+            std::cout << (Ri - Rj).transpose() << std::endl;*/
+
+            b.row(i) += wij / 2 * (Ri - Rj) * (vi - neighbor);
+        }
+    }
+
+    return b;
+}
+
 /* Apply arap algo for one iteration
  * V : Matrix of initial points (previous frame)
  * C : Constraints vertices 
  *
  * Out : Update V 
  */
-void arap(const MatrixXd &V, const MatrixXi &F, const std::list<std::pair<int, Vector3d>> C, MatrixXd new_V) {
-    // Initialize new V vertices
+void arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint> C, MatrixXd new_V) {
+    // Initialize new V vertices by adding constraint vertices
     // Do it here or before ?
 
     // Center meshes
@@ -196,7 +239,7 @@ void arap(const MatrixXd &V, const MatrixXi &F, const std::list<std::pair<int, V
     // Precompute Laplacian-Beltrami matrix
     compute_laplacian_matrix(C);
 
-    // ITERATE
+    // ITERATE (avant le calcul des poids ?)
 
     // Find optimal Ri for each cell
     std::vector<MatrixXd> R(V.rows()); // Matrix of local rotations
@@ -212,9 +255,21 @@ void arap(const MatrixXd &V, const MatrixXi &F, const std::list<std::pair<int, V
         R[i] = Ri;
 
         // DEBUG
-        std::cout << Ri << std::endl;
+        //std::cout << Ri << std::endl;
     }
     
 
     // Find optimal p'
+    MatrixXd b = compute_b(V, R);
+
+    //std::cout << b << std::endl;
+
+    //SimplicialCholesky<SparseMatrix<double>> solver;
+    //LLT<MatrixXd> chol(L);
+
+    // Comment gérer la solution évidente de 0 ?
+    new_V = L.llt().solve(b);
+
+    std::cout << new_V << std::endl;
+
 }

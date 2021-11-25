@@ -54,10 +54,21 @@ int main(int argc, char *argv[])
         new_V.row(i) = mesh.V.row(i) * R.transpose();
     }*/
 
-    //new_V.row(0) = mesh.V.row(0) * R.transpose();
+    new_V = mesh.V;
+    //new_V.row(0) << -1.0, 0.0, 0.0;
+
 
     //std::cout << new_V << std::endl;
-    std::list<std::pair<int, Vector3d>> C;
+    //mesh.addControlPoint(5, RowVector3d(-1.0, 0.0, 0.0));
+    std::vector<ControlPoint> C = mesh.getControlPoints();
+
+    /*std::cout << "C = { ";
+    for (ControlPoint c : C) {
+            std::cout << c.vertexIndexInMesh << ": ";
+            std::cout << c.wantedVertexPosition << ", ";
+    }
+    std::cout << "}; \n";*/
+
     arap(mesh.V, mesh.F, C, new_V);
 
     // Setup the interface
