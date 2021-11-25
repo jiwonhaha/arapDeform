@@ -9,6 +9,15 @@ Eigen::MatrixXd Mesh::getVerticesFromIndex(const std::vector<int>& indexes) cons
 	return verts;
 }
 
+std::vector<ControlPoint*> Mesh::getControlPointsW()
+{
+	std::vector<ControlPoint*> cpp = std::vector<ControlPoint*>();
+	cpp.reserve(controlPoints.size());
+	for (auto& cp : controlPoints)
+		cpp.push_back(&cp);
+	return cpp;
+}
+
 std::vector<int> Mesh::getControlPointsIndex() const
 {
 	std::vector<int> indexes;
@@ -64,7 +73,7 @@ void Mesh::addControlPoint(int vertexIndex, Eigen::RowVector3d position)
 		}
 
 	// Else just add it
-	controlPoints.push_back(ControlPoint(vertexIndex, V.row(vertexIndex)));
+	controlPoints.push_back(ControlPoint(vertexIndex, position));
 }
 
 void Mesh::removeControlPoint(int vertexIndex)

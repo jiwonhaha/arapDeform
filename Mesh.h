@@ -14,6 +14,7 @@ public:
 	Eigen::MatrixXd getVerticesFromIndex(const std::vector<int>& indexes) const;
 
 	const std::vector<ControlPoint>& getControlPoints() const { return controlPoints; }
+	std::vector<ControlPoint*> getControlPointsW();
 	std::vector<int> getControlPointsIndex() const;
 	Eigen::MatrixXd getControlPointsWantedPosition() const;
 	bool isAControlPoint(int vertexIndex) const;

@@ -73,9 +73,9 @@ int main(int argc, char *argv[])
         interfaceManager.onMouseReleased();
         return false;
     };
-    viewer.callback_mouse_move = [&interfaceManager](igl::opengl::glfw::Viewer& viewer, int, int modifier)->bool
+    viewer.callback_mouse_move = [&interfaceManager, &mesh](igl::opengl::glfw::Viewer& viewer, int, int modifier)->bool
     {
-        return interfaceManager.onMouseMoved();
+        return interfaceManager.onMouseMoved(viewer, mesh);
     };
     viewer.callback_key_down = [&interfaceManager, &mesh](igl::opengl::glfw::Viewer& viewer, unsigned char key, int modifier)->bool
     {

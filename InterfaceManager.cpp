@@ -1,9 +1,25 @@
 #include "InterfaceManager.h"
 #include <igl/unproject_onto_mesh.h>
+#include <igl/unproject_on_line.h>
+#include <igl/unproject_on_plane.h>
 #include <igl/point_mesh_squared_distance.h>
 
 
-std::vector<int> InterfaceManager::getSelectedControlPoints(const Mesh& mesh, bool invert)
+std::vector<ControlPoint*> InterfaceManager::getSelectedControlPoints(Mesh& mesh)
+{
+    std::vector<ControlPoint*> cp = mesh.getControlPointsW();
+    std::vector<ControlPoint*> selection_cp = std::vector<ControlPoint*>();
+    for (const auto& ptr : cp)
+        for (const auto& i : selection)
+            if (ptr->vertexIndexInMesh == i)
+            {
+                selection_cp.push_back(ptr);
+                break;
+            }
+
+    return selection_cp;
+}
+std::vector<int> InterfaceManager::getSelectedControlPointsIndex(const Mesh& mesh, bool invert)
 {
     std::vector<int> selection_cp = std::vector<int>();
     for (const auto& i : selection)
@@ -12,7 +28,7 @@ std::vector<int> InterfaceManager::getSelectedControlPoints(const Mesh& mesh, bo
 
     return selection_cp;
 }
-std::vector<int> InterfaceManager::getNonSelectedControlPoints(const Mesh& mesh)
+std::vector<int> InterfaceManager::getNonSelectedControlPointsIndex(const Mesh& mesh)
 {
     std::vector<int> selection_cp = std::vector<int>();
     std::vector<int> all_cp = mesh.getControlPointsIndex();
@@ -35,23 +51,26 @@ std::vector<int> InterfaceManager::getNonSelectedControlPoints(const Mesh& mesh)
 void InterfaceManager::displaySelectedPoints(igl::opengl::glfw::Viewer& viewer, Mesh& mesh)
 {
     // retrieve the control points not selected
-    Eigen::MatrixXd cpNotSelected = mesh.getVerticesFromIndex(getNonSelectedControlPoints(mesh));
+    Eigen::MatrixXd cpNotSelected = mesh.getVerticesFromIndex(getNonSelectedControlPointsIndex(mesh));
     // retrieve the control points selected
-    Eigen::MatrixXd cpSelected = mesh.getVerticesFromIndex(getSelectedControlPoints(mesh));
+    Eigen::MatrixXd cpSelected = mesh.getVerticesFromIndex(getSelectedControlPointsIndex(mesh));
+    Eigen::MatrixXd cppSelected = mesh.getControlPointsWantedPosition();
     // retrieve the standard points selected
-    Eigen::MatrixXd notCpSelected = mesh.getVerticesFromIndex(getSelectedControlPoints(mesh, true));
+    Eigen::MatrixXd notCpSelected = mesh.getVerticesFromIndex(getSelectedControlPointsIndex(mesh, true));
 
     
     if (moveSelectionMode)
     {
         viewer.data().set_points(cpNotSelected, Eigen::RowVector3d(0, 0.5, 0));
         viewer.data().add_points(cpSelected, Eigen::RowVector3d(0, 1, 0.5));
+        viewer.data().add_points(cppSelected, Eigen::RowVector3d(0, 0.5, 1));
         viewer.data().add_points(notCpSelected, Eigen::RowVector3d(1, 0.5, 0));
     }
     else
     {
         viewer.data().set_points(cpNotSelected, Eigen::RowVector3d(0, 0.5, 0));
         viewer.data().add_points(cpSelected, Eigen::RowVector3d(0, 1, 0));
+        viewer.data().add_points(cppSelected, Eigen::RowVector3d(0, 0, 1));
         viewer.data().add_points(notCpSelected, Eigen::RowVector3d(1, 0, 0));
     }
 }
@@ -62,7 +81,10 @@ void InterfaceManager::onMousePressed(igl::opengl::glfw::Viewer& viewer, Mesh& m
     mouseIsPressed = true;
 
     if (moveSelectionMode)
+    {
+        projectOnMoveDirection(viewer, lastProjectedPoint);
         return;
+    }
 
     int fid;
     Eigen::Vector3d bc;
@@ -115,20 +137,47 @@ void InterfaceManager::onMouseReleased()
     mouseIsPressed = false;
 }
 
-bool InterfaceManager::onMouseMoved()
+bool InterfaceManager::onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mesh)
 {
     if (!mouseIsPressed)
         return false;
 
     if (moveSelectionMode)
     {
-        // move control points that are in the selection
-        // ....
-        // use unproject on plane or line depending on the move direction
+        if (selection.size() == 0)
+            return true;
+
+        Eigen::Vector3d projPoint = Eigen::Vector3d();
+        projectOnMoveDirection(viewer, projPoint);
+
+        Eigen::RowVector3d mouseMovement = (lastProjectedPoint - projPoint).transpose();
+        lastProjectedPoint = projPoint;
+
+        for (auto& cpp : getSelectedControlPoints(mesh))
+                cpp->wantedVertexPosition += mouseMovement;
+        
+        displaySelectedPoints(viewer, mesh);
         return true;
     }
     else
         return false;   // simply move the viewpoint    
+}
+
+void InterfaceManager::projectOnMoveDirection(igl::opengl::glfw::Viewer& viewer, Eigen::Vector3d& projectionReceiver)
+{
+    double x = viewer.current_mouse_x;
+    double y = viewer.current_mouse_y;
+    Eigen::Vector3d origin = Eigen::Vector3d(1,1,1);
+
+    // move control points that are in the selection
+    if (secondMoveDirection.norm() < 0.1)
+        // Move along a line
+        igl::unproject_on_line(Eigen::Vector2f(x, y), viewer.core().proj, viewer.core().viewport, origin, firstMoveDirection, projectionReceiver);
+    
+    else
+    {
+        // Mode along a plane
+    }
 }
 
 void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, unsigned char key, bool isShiftPressed)
@@ -158,39 +207,39 @@ void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mes
     {
         if (isShiftPressed)
         {
-            firstMoveDirection = Eigen::RowVector3d(0, 1, 0);
-            secondMoveDirection = Eigen::RowVector3d(0, 0, 1);
+            firstMoveDirection = Eigen::Vector3d(0, 1, 0);
+            secondMoveDirection = Eigen::Vector3d(0, 0, 1);
         }
         else
         {
-            firstMoveDirection = Eigen::RowVector3d(1, 0, 0);
-            secondMoveDirection = Eigen::RowVector3d(0, 0, 0);
+            firstMoveDirection = Eigen::Vector3d(1, 0, 0);
+            secondMoveDirection = Eigen::Vector3d(0, 0, 0);
         }
     }
     else if (key == 'Y')
     {
         if (isShiftPressed)
         {
-            firstMoveDirection = Eigen::RowVector3d(1, 0, 0);
-            secondMoveDirection = Eigen::RowVector3d(0, 0, 1);
+            firstMoveDirection = Eigen::Vector3d(1, 0, 0);
+            secondMoveDirection = Eigen::Vector3d(0, 0, 1);
         }
         else
         {
-            firstMoveDirection = Eigen::RowVector3d(0, 1, 0);
-            secondMoveDirection = Eigen::RowVector3d(0, 0, 0);
+            firstMoveDirection = Eigen::Vector3d(0, 1, 0);
+            secondMoveDirection = Eigen::Vector3d(0, 0, 0);
         }
     }
     else if (key == 'Z')
     {
         if (isShiftPressed)
         {
-            firstMoveDirection = Eigen::RowVector3d(1, 0, 0);
-            secondMoveDirection = Eigen::RowVector3d(0, 1, 0);
+            firstMoveDirection = Eigen::Vector3d(1, 0, 0);
+            secondMoveDirection = Eigen::Vector3d(0, 1, 0);
         }
         else
         {
-            firstMoveDirection = Eigen::RowVector3d(0, 0, 1);
-            secondMoveDirection = Eigen::RowVector3d(0, 0, 0);
+            firstMoveDirection = Eigen::Vector3d(0, 0, 1);
+            secondMoveDirection = Eigen::Vector3d(0, 0, 0);
         }
     }
 }
