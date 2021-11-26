@@ -17,6 +17,7 @@ public:
 	std::vector<ControlPoint*> getControlPointsW();
 	std::vector<int> getControlPointsIndex() const;
 	Eigen::MatrixXd getControlPointsWantedPosition() const;
+	Eigen::MatrixXd getControlPointsWantedPositionBySelection(const std::vector<int>& selection, bool invert = false) const;
 	bool isAControlPoint(int vertexIndex) const;
 	ControlPoint* getControlPoint(int vertexIndex);		// be careful : changing controlPoints vector may change its memory location => would invalidate the pointer
 	

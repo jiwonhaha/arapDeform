@@ -48,33 +48,88 @@ std::vector<int> InterfaceManager::getNonSelectedControlPointsIndex(const Mesh& 
     return selection_cp;
 }
 
-void InterfaceManager::displaySelectedPoints(igl::opengl::glfw::Viewer& viewer, Mesh& mesh)
+void InterfaceManager::displaySelectedPoints(igl::opengl::glfw::Viewer& viewer, const Mesh& mesh)
 {
     // retrieve the control points not selected
     Eigen::MatrixXd cpNotSelected = mesh.getVerticesFromIndex(getNonSelectedControlPointsIndex(mesh));
+    Eigen::MatrixXd cppNotSelected = mesh.getControlPointsWantedPositionBySelection(selection, true);
     // retrieve the control points selected
     Eigen::MatrixXd cpSelected = mesh.getVerticesFromIndex(getSelectedControlPointsIndex(mesh));
-    Eigen::MatrixXd cppSelected = mesh.getControlPointsWantedPosition();
+    Eigen::MatrixXd cppSelected = mesh.getControlPointsWantedPositionBySelection(selection);
     // retrieve the standard points selected
     Eigen::MatrixXd notCpSelected = mesh.getVerticesFromIndex(getSelectedControlPointsIndex(mesh, true));
+
+
+    Eigen::MatrixXd cpNotSelected_edgesVert = Eigen::MatrixXd::Zero(cpNotSelected.rows() + cppNotSelected.rows(), 3);
+    cpNotSelected_edgesVert << cpNotSelected,
+        cppNotSelected;
+    const int nbCpNotSelected = cpNotSelected.rows();
+    Eigen::MatrixXi cpNotSelected_edges = Eigen::MatrixXi::Zero(nbCpNotSelected, 2);
+    for (int i = 0; i < nbCpNotSelected; i++)
+        cpNotSelected_edges.row(i) = Eigen::RowVector2i(i, i + nbCpNotSelected);
 
     
     if (moveSelectionMode)
     {
+        viewer.data().set_edges(cpNotSelected_edgesVert, cpNotSelected_edges, Eigen::RowVector3d(0, 0.5, 0));
+        //viewer.data().add_edges(cpSelected_edgesVert, cpSelected_edges, Eigen::RowVector3d(0, 1, 0.5));
+        viewer.data().add_edges(cpSelected, cppSelected, Eigen::RowVector3d(0, 1, 0.5));
         viewer.data().set_points(cpNotSelected, Eigen::RowVector3d(0, 0.5, 0));
+        viewer.data().add_points(cppNotSelected, Eigen::RowVector3d(0, 0.5, 0));
         viewer.data().add_points(cpSelected, Eigen::RowVector3d(0, 1, 0.5));
-        viewer.data().add_points(cppSelected, Eigen::RowVector3d(0, 0.5, 1));
+        viewer.data().add_points(cppSelected, Eigen::RowVector3d(0, 1, 0.5));
         viewer.data().add_points(notCpSelected, Eigen::RowVector3d(1, 0.5, 0));
     }
     else
     {
+        viewer.data().set_edges(cpNotSelected_edgesVert, cpNotSelected_edges, Eigen::RowVector3d(0, 0.5, 0));
+        //viewer.data().add_edges(cpSelected_edgesVert, cpSelected_edges, Eigen::RowVector3d(0, 1, 0));
+        viewer.data().add_edges(cpSelected, cppSelected, Eigen::RowVector3d(0, 1, 0));
         viewer.data().set_points(cpNotSelected, Eigen::RowVector3d(0, 0.5, 0));
+        viewer.data().add_points(cppNotSelected, Eigen::RowVector3d(0, 0.5, 0));
         viewer.data().add_points(cpSelected, Eigen::RowVector3d(0, 1, 0));
-        viewer.data().add_points(cppSelected, Eigen::RowVector3d(0, 0, 1));
+        viewer.data().add_points(cppSelected, Eigen::RowVector3d(0, 1, 0));
         viewer.data().add_points(notCpSelected, Eigen::RowVector3d(1, 0, 0));
+    }
+
+    if (!moveSelectionMode)
+        return;
+
+    if (moveOnLine)
+    {
+        displayMoveAxis(viewer, firstMoveDirection, cppSelected);
+    }
+    else
+    {
+        if (firstMoveDirection.x() != 0)
+        {
+            displayMoveAxis(viewer, Eigen::Vector3d(0, 1, 0), cppSelected);
+            displayMoveAxis(viewer, Eigen::Vector3d(0, 0, 1), cppSelected);
+        }
+        else if (firstMoveDirection.y() != 0)
+        {
+            displayMoveAxis(viewer, Eigen::Vector3d(1, 0, 0), cppSelected);
+            displayMoveAxis(viewer, Eigen::Vector3d(0, 0, 1), cppSelected);
+        }
+        else
+        {
+            displayMoveAxis(viewer, Eigen::Vector3d(1, 0, 0), cppSelected);
+            displayMoveAxis(viewer, Eigen::Vector3d(0, 1, 0), cppSelected);
+        }
     }
 }
 
+void InterfaceManager::displayMoveAxis(igl::opengl::glfw::Viewer& viewer, const Eigen::Vector3d& axisVector, const Eigen::MatrixXd& cppSelected)
+{
+    const Eigen::RowVector3d axisTransposed = axisVector.transpose();
+    Eigen::RowVector3d origin = Eigen::RowVector3d::Zero();
+    for (int i = 0; i < cppSelected.rows(); i++)
+        origin += cppSelected.row(i);
+
+    Eigen::RowVector3d start = origin + axisTransposed * 5;
+    Eigen::RowVector3d end = origin + axisTransposed * -5;
+    viewer.data().add_edges(start, end, axisTransposed);
+}
 
 void InterfaceManager::onMousePressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, bool isShiftPressed)
 {
@@ -167,16 +222,17 @@ void InterfaceManager::projectOnMoveDirection(igl::opengl::glfw::Viewer& viewer,
 {
     double x = viewer.current_mouse_x;
     double y = viewer.current_mouse_y;
-    Eigen::Vector3d origin = Eigen::Vector3d(1,1,1);
 
     // move control points that are in the selection
-    if (secondMoveDirection.norm() < 0.1)
+    if (moveOnLine)
         // Move along a line
-        igl::unproject_on_line(Eigen::Vector2f(x, y), viewer.core().proj, viewer.core().viewport, origin, firstMoveDirection, projectionReceiver);
+        igl::unproject_on_line(Eigen::Vector2f(x, y), viewer.core().proj, viewer.core().viewport, Eigen::Vector3d(1, 1, 1), firstMoveDirection, projectionReceiver);
     
     else
     {
         // Mode along a plane
+        Eigen::Vector4f planeEquation = Eigen::Vector4f(firstMoveDirection.x(), firstMoveDirection.y(), firstMoveDirection.z(), 3);
+        igl::unproject_on_plane(Eigen::Vector2f(x, y), viewer.core().proj, viewer.core().viewport, planeEquation, projectionReceiver);
     }
 }
 
@@ -204,42 +260,18 @@ void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mes
         mesh.printControlPoints();
     }
     else if (key == 'X')
-    {
-        if (isShiftPressed)
-        {
-            firstMoveDirection = Eigen::Vector3d(0, 1, 0);
-            secondMoveDirection = Eigen::Vector3d(0, 0, 1);
-        }
-        else
-        {
-            firstMoveDirection = Eigen::Vector3d(1, 0, 0);
-            secondMoveDirection = Eigen::Vector3d(0, 0, 0);
-        }
-    }
+        setMoveDirection(Eigen::Vector3d(1, 0, 0), isShiftPressed, viewer, mesh);
+    
     else if (key == 'Y')
-    {
-        if (isShiftPressed)
-        {
-            firstMoveDirection = Eigen::Vector3d(1, 0, 0);
-            secondMoveDirection = Eigen::Vector3d(0, 0, 1);
-        }
-        else
-        {
-            firstMoveDirection = Eigen::Vector3d(0, 1, 0);
-            secondMoveDirection = Eigen::Vector3d(0, 0, 0);
-        }
-    }
+        setMoveDirection(Eigen::Vector3d(0, 1, 0), isShiftPressed, viewer, mesh);
+ 
     else if (key == 'Z')
-    {
-        if (isShiftPressed)
-        {
-            firstMoveDirection = Eigen::Vector3d(1, 0, 0);
-            secondMoveDirection = Eigen::Vector3d(0, 1, 0);
-        }
-        else
-        {
-            firstMoveDirection = Eigen::Vector3d(0, 0, 1);
-            secondMoveDirection = Eigen::Vector3d(0, 0, 0);
-        }
-    }
+        setMoveDirection(Eigen::Vector3d(0, 0, 1), isShiftPressed, viewer, mesh);
+}
+
+void InterfaceManager::setMoveDirection(const Eigen::Vector3d& direction, const bool& isShiftPressed, igl::opengl::glfw::Viewer& viewer, const Mesh& mesh)
+{
+    firstMoveDirection = direction;
+    moveOnLine = !isShiftPressed;
+    displaySelectedPoints(viewer, mesh);
 }

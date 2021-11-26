@@ -35,6 +35,30 @@ Eigen::MatrixXd Mesh::getControlPointsWantedPosition() const
 	return cpPosition;
 }
 
+Eigen::MatrixXd Mesh::getControlPointsWantedPositionBySelection(const std::vector<int>& selection, bool invert) const
+{
+	std::vector<const ControlPoint*> cpToUse = std::vector<const ControlPoint*>();
+	for (const auto& cp : controlPoints)
+	{
+		bool inSelection = false;
+		for (const auto& i : selection)
+			if (i == cp.vertexIndexInMesh)
+			{
+				inSelection = true;
+				break;
+			}
+
+		if (inSelection ^ invert)
+			cpToUse.push_back(&cp);
+	}
+
+	Eigen::MatrixXd wantedPositions = Eigen::MatrixXd::Zero(cpToUse.size(), 3);
+	for (int i = 0; i < cpToUse.size(); i++)
+		wantedPositions.row(i) = cpToUse[i]->wantedVertexPosition;
+
+	return wantedPositions;
+}
+
 bool Mesh::isAControlPoint(int vertexIndex) const
 {
 	for (const auto& cp : controlPoints)
