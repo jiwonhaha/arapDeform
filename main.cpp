@@ -1,4 +1,5 @@
 #include <igl/opengl/glfw/Viewer.h>
+#include <igl/arap.h>
 #include "ARAPSolver.h"
 #include "Mesh.h"
 #include "InterfaceManager.h"
@@ -69,7 +70,20 @@ int main(int argc, char *argv[])
     }
     std::cout << "}; \n";*/
 
-    arap(mesh.V, mesh.F, C, new_V);
+    new_V = arap(mesh.V, mesh.F, C, new_V);
+    std::cout << new_V << std::endl;
+
+    /*igl::ARAPData arap_data;
+    arap_data.energy = igl::ARAP_ENERGY_TYPE_SPOKES;
+    VectorXi b;
+    igl::arap_precomputation(mesh.V, mesh.F, 3, b, arap_data);
+
+    MatrixXd U = mesh.V;
+    MatrixXd bc;
+    igl::arap_solve(bc, arap_data, U);
+
+    std::cout << U << std::endl;*/
+
 
     // Setup the interface
     igl::opengl::glfw::Viewer viewer;
@@ -95,8 +109,8 @@ int main(int argc, char *argv[])
     };
 
     // Plot the mesh
-    viewer.data().set_mesh(mesh.V, mesh.F);
-    //viewer.data().set_mesh(new_V, mesh.F);
+    //viewer.data().set_mesh(mesh.V, mesh.F);
+    viewer.data().set_mesh(new_V, mesh.F);
     viewer.data().set_face_based(true);
     viewer.launch();
 }
