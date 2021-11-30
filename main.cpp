@@ -34,12 +34,6 @@ int main(int argc, char *argv[])
 
     // Find one-ring neighbors
     find_neighbors(mesh.V, mesh.F);
-    
-    // DEBUG
-    /*// Compute edges weights
-    compute_edges_weight(mesh.V, mesh.F);
-    // Compute Laplacian matrix
-    compute_laplacian_matrix();*/
 
     MatrixXd new_V(mesh.V.rows(), mesh.V.cols());
 
@@ -54,24 +48,27 @@ int main(int argc, char *argv[])
     /*for (int i = 0; i < mesh.V.rows(); i++) {
         new_V.row(i) = mesh.V.row(i) * R.transpose();
     }*/
+    
+    MatrixXd mesh_centered = mesh.V.rowwise() - mesh.V.colwise().mean();
+    std::cout << mesh_centered << std::endl;
 
     new_V = mesh.V;
-    //new_V.row(0) << -1.0, 0.0, 0.0;
 
 
     //std::cout << new_V << std::endl;
-    //mesh.addControlPoint(5, RowVector3d(-1.0, 0.0, 0.0));
+    //mesh.addControlPoint(0, RowVector3d(-0.5, -0.5, -0.5));
+    //mesh.addControlPoint(7, RowVector3d(0.5, 0.5, 0.5));
     std::vector<ControlPoint> C = mesh.getControlPoints();
 
-    /*std::cout << "C = { ";
+    std::cout << "C = { ";
     for (ControlPoint c : C) {
             std::cout << c.vertexIndexInMesh << ": ";
             std::cout << c.wantedVertexPosition << ", ";
     }
-    std::cout << "}; \n";*/
+    std::cout << "}; \n";
 
-    new_V = arap(mesh.V, mesh.F, C, new_V);
-    std::cout << new_V << std::endl;
+    new_V = arap(mesh_centered, mesh.F, C, new_V);
+    //std::cout << new_V << std::endl;
 
     /*igl::ARAPData arap_data;
     arap_data.energy = igl::ARAP_ENERGY_TYPE_SPOKES;

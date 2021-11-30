@@ -33,7 +33,7 @@ void find_neighbors(const MatrixXd V, const MatrixXi F) {
 
     // DEBUG
     // Print out the vector 
-    std::cout << "neighbors = { ";
+    /*std::cout << "neighbors = { ";
     for (std::list<int> neighbor : neighbors) {
         std::cout << "{ ";
         for (int n : neighbor) {
@@ -41,7 +41,7 @@ void find_neighbors(const MatrixXd V, const MatrixXi F) {
         }
         std::cout << "}; \n";
     }
-    std::cout << "}; \n";
+    std::cout << "}; \n";*/
 }
 
 /* Compute weights wij
@@ -52,6 +52,7 @@ void find_neighbors(const MatrixXd V, const MatrixXi F) {
  */
 void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
     weights = MatrixXd::Zero(V.rows(), V.rows());
+
 
     for (int i = 0; i < F.rows(); i++) {
         // Compute edges vectors CCW
@@ -88,7 +89,7 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
     weights = (float) 1 / 2 * weights;
 
     // DEBUG
-    std::cout << weights << std::endl;
+    //std::cout << weights << std::endl;
 }
 
 void compute_laplacian_matrix(const std::vector<ControlPoint> C) {
@@ -177,15 +178,15 @@ MatrixXd compute_covariance_matrix(MatrixXd V, MatrixXd new_V, int index) {
     return Si;
 }
 
-/*std::pair<bool, VectorXd> isConstraint(const std::vector<ControlPoint> C, int index) {
+std::pair<bool, Vector3d> isConstraint(const std::vector<ControlPoint> C, int index) {
 
     for (ControlPoint c : C) {
         if (index == c.vertexIndexInMesh) {
-            return std::pair<bool, VectorXd>(true, c.wantedVertexPosition);
+            return std::pair<bool, Vector3d>(true, c.wantedVertexPosition);
         }
     }
-    return std::pair<bool, VectorXd>(false, VectorXd(0,0,0));
-}*/
+    return std::pair<bool, Vector3d>(false, Vector3d(0,0,0));
+}
 
 MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std::vector<ControlPoint> C) {
 
@@ -203,45 +204,51 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
         // For each neighbor add the corresponding term
         // TODO: check if constraint
         // Check if the point is a constraint
-        /*std::pair<bool, VectorXd> constraint = isConstraint(C, i);
+        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
 
         if (constraint.first) {
-            b.row(i) = constraint.second;
+            b.row(i) = (VectorXd) constraint.second;
         }
-        else {*/
+        else {
             // For each neighbor
             for (std::list<int>::iterator it = neighbors_v.begin(); it != neighbors_v.end(); ++it) {
 
                 // Check if the neighbor is a constraint 
-                //std::pair<bool, VectorXd> constraint_n = isConstraint(C, *it);
+                /*std::pair<bool, Vector3d> constraint_n = isConstraint(C, *it);
 
-                /*VectorXd neighbor;
+                VectorXd neighbor;
                 if (constraint_n.first) {
-                    neighbor = constraint_n.second;
+                    std::cout << "yep" << std::endl;
+                    neighbor = (VectorXd) constraint_n.second;
                 }
                 else {
                     neighbor = V.row(*it);
-                }*/
-                //std::cout << neighbor << std::endl;
+                }
+                std::cout << neighbor << std::endl;*/
 
-                VectorXd neighbor = V.row(*it);
+                std::pair<bool, Vector3d> constraint_n = isConstraint(C, *it);
 
-                // Weight of the edge
-                double wij = weights(i, *it);
-                //std::cout << wij << std::endl;
+                VectorXd neighbor;
+                if (!constraint_n.first) {
+                    VectorXd neighbor = V.row(*it);
 
-                // Neighbor Rotation matrix
-                MatrixXd Rj = R[*it];
+                    // Weight of the edge
+                    double wij = weights(i, *it);
+                    //std::cout << wij << std::endl;
 
-                // Add the term (+= ou -= ?? mettre transpose ??)
-                /*std::cout << (vi - neighbor).rows() << std::endl;
-                std::cout << (vi - neighbor).cols() << std::endl;
-                std::cout << vi - neighbor << std::endl;
-                std::cout << (Ri - Rj).transpose() << std::endl;*/
+                    // Neighbor Rotation matrix
+                    MatrixXd Rj = R[*it];
 
-                b.row(i) -= (double)wij / 2 * (Ri + Rj) * (vi - neighbor);
+                    // Add the term (+= ou -= ?? mettre transpose ??)
+                    /*std::cout << (vi - neighbor).rows() << std::endl;
+                    std::cout << (vi - neighbor).cols() << std::endl;
+                    std::cout << vi - neighbor << std::endl;
+                    std::cout << (Ri - Rj).transpose() << std::endl;*/
+
+                    b.row(i) -= (double)wij / 2 * (Ri + Rj) * (vi - neighbor);
+                }
             }
-        //}
+        }
     }
 
     return b;
@@ -257,9 +264,14 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
     // Initialize new V vertices by adding constraint vertices
     // Do it here or before ?
 
-    // Center meshes
+    // Center meshes and constraint points
     MatrixXd V_centered = V.rowwise() - V.colwise().mean();
     MatrixXd new_V_centered = new_V.rowwise() - new_V.colwise().mean();
+
+    /*std::vector<ControlPoint> C_centered;
+    for (ControlPoint c : C) {
+        C_centered.push_back(ControlPoint(c.vertexIndexInMesh, c.wantedVertexPosition - V.colwise().mean()));
+    }*/
 
     /*std::cout << V.colwise().mean() << std::endl;
     std::cout << new_V.colwise().mean() << std::endl;*/
@@ -286,22 +298,37 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
         R[i] = Ri;
 
         // DEBUG
-        //std::cout << Ri << std::endl;
+        std::cout << Ri << std::endl;
     }
     
 
     // Find optimal p'
-    MatrixXd b = compute_b(V, R, C);
+    MatrixXd b = compute_b(V_centered, R, C);
 
     std::cout << b << std::endl;
 
     //SimplicialCholesky<SparseMatrix<double>> solver;
     //LLT<MatrixXd> chol(L);
 
-    // Comment gérer la solution évidente de 0 ?
-    new_V = L.llt().solve(b);
+    new_V = L.ldlt().solve(b);
+
+    // Align centroids A REVOIR
+    // TODO: add rotation in the formula
+    for (int i = 0; i < new_V.rows(); i++) {
+        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
+        if (!constraint.first) {
+            new_V.row(i) += -new_V.colwise().mean() + V.colwise().mean();
+        }
+    }
+    
+
+    //std::cout << new_V.colwise().mean() << std::endl;
 
     std::cout << new_V << std::endl;
+
+    std::cout << L * new_V << std::endl;
+
+    std::cout << L * V << std::endl;
 
     return new_V;
 }
