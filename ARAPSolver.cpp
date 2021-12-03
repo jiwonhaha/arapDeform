@@ -7,6 +7,8 @@ std::vector<std::list<int>> neighbors;
 MatrixXd weights;
 MatrixXd L;
 
+float eps = 1e-10;
+
 
 /* Find one-ring neighbors of all the vertices in V.
  * V : Matrix of vertices
@@ -88,8 +90,17 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
     // Divide all the weights by 2
     weights = (float) 1 / 2 * weights;
 
+    // Put small values to 0
+    /*for (int i = 0; i < weights.rows(); i++) {
+        for (int j = 0; j < weights.cols(); j++) {
+            if (weights(i, j) < eps) {
+                weights(i, j) = 0;
+            }
+        }
+    }*/
+
     // DEBUG
-    //std::cout << weights << std::endl;
+    std::cout << weights << std::endl;
 }
 
 void compute_laplacian_matrix(const std::vector<ControlPoint> C) {
@@ -207,7 +218,7 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
         std::pair<bool, Vector3d> constraint = isConstraint(C, i);
 
         if (constraint.first) {
-            b.row(i) = (VectorXd) constraint.second;
+            b.row(i) = - (VectorXd) constraint.second;
         }
         else {
             // For each neighbor
@@ -268,10 +279,17 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
     MatrixXd V_centered = V.rowwise() - V.colwise().mean();
     MatrixXd new_V_centered = new_V.rowwise() - new_V.colwise().mean();
 
-    /*std::vector<ControlPoint> C_centered;
+    std::vector<ControlPoint> C_centered;
     for (ControlPoint c : C) {
         C_centered.push_back(ControlPoint(c.vertexIndexInMesh, c.wantedVertexPosition - V.colwise().mean()));
-    }*/
+    }
+
+    std::cout << "C = { ";
+    for (ControlPoint c : C) {
+        std::cout << c.vertexIndexInMesh << ": ";
+        std::cout << c.wantedVertexPosition << ", ";
+    }
+    std::cout << "}; \n";
 
     /*std::cout << V.colwise().mean() << std::endl;
     std::cout << new_V.colwise().mean() << std::endl;*/
@@ -303,23 +321,27 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
     
 
     // Find optimal p'
-    MatrixXd b = compute_b(V_centered, R, C);
+    MatrixXd b = compute_b(V_centered, R, C_centered);
 
-    std::cout << b << std::endl;
+    //std::cout << b << std::endl;
 
     //SimplicialCholesky<SparseMatrix<double>> solver;
     //LLT<MatrixXd> chol(L);
 
     new_V = L.ldlt().solve(b);
+    std::cout << new_V << std::endl;
+
+    std::cout << L * new_V << std::endl;
 
     // Align centroids A REVOIR
-    // TODO: add rotation in the formula
-    for (int i = 0; i < new_V.rows(); i++) {
+    // TODO: add rotation in the formula ?
+    std::cout << new_V.colwise().mean() << std::endl;
+    /*for (int i = 0; i < new_V.rows(); i++) {
         std::pair<bool, Vector3d> constraint = isConstraint(C, i);
         if (!constraint.first) {
             new_V.row(i) += -new_V.colwise().mean() + V.colwise().mean();
         }
-    }
+    }*/
     
 
     //std::cout << new_V.colwise().mean() << std::endl;
@@ -328,7 +350,7 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
 
     std::cout << L * new_V << std::endl;
 
-    std::cout << L * V << std::endl;
+    std::cout << L * V_centered << std::endl;
 
     return new_V;
 }

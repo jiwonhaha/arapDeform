@@ -49,15 +49,15 @@ int main(int argc, char *argv[])
         new_V.row(i) = mesh.V.row(i) * R.transpose();
     }*/
     
-    MatrixXd mesh_centered = mesh.V.rowwise() - mesh.V.colwise().mean();
-    std::cout << mesh_centered << std::endl;
+    //MatrixXd mesh_centered = mesh.V.rowwise() - mesh.V.colwise().mean();
+    //std::cout << mesh_centered << std::endl;
 
     new_V = mesh.V;
 
 
     //std::cout << new_V << std::endl;
-    //mesh.addControlPoint(0, RowVector3d(-0.5, -0.5, -0.5));
-    //mesh.addControlPoint(7, RowVector3d(0.5, 0.5, 0.5));
+    mesh.addControlPoint(0, RowVector3d(1, 1, 1));
+    mesh.addControlPoint(7, RowVector3d(0, 0, 0));
     std::vector<ControlPoint> C = mesh.getControlPoints();
 
     std::cout << "C = { ";
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     }
     std::cout << "}; \n";
 
-    new_V = arap(mesh_centered, mesh.F, C, new_V);
+    new_V = arap(mesh.V, mesh.F, C, new_V);
     //std::cout << new_V << std::endl;
 
     /*igl::ARAPData arap_data;
