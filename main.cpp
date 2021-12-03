@@ -56,8 +56,8 @@ int main(int argc, char *argv[])
 
 
     //std::cout << new_V << std::endl;
-    mesh.addControlPoint(0, RowVector3d(1, 1, 1));
-    mesh.addControlPoint(7, RowVector3d(0, 0, 0));
+    mesh.addControlPoint(0, RowVector3d(0, 0, 0));
+    mesh.addControlPoint(7, RowVector3d(1, 2, 1));
     std::vector<ControlPoint> C = mesh.getControlPoints();
 
     std::cout << "C = { ";
