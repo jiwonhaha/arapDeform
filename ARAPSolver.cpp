@@ -100,7 +100,7 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
     }*/
 
     // DEBUG
-    std::cout << weights << std::endl;
+    //std::cout << weights << std::endl;
 }
 
 void compute_laplacian_matrix(const std::vector<ControlPoint> C) {
@@ -287,13 +287,15 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
  *
  * Out : Update V 
  */
-MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint> C, MatrixXd new_V) {
+MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint> C) {
     // Initialize new V vertices by adding constraint vertices
     // Do it here or before ?
 
     // Center meshes and constraint points
     MatrixXd V_centered = V.rowwise() - V.colwise().mean();
-    MatrixXd new_V_centered = new_V.rowwise() - new_V.colwise().mean();
+
+    // Initialize updated matrix
+    MatrixXd new_V = V_centered;
 
     std::vector<ControlPoint> C_centered;
     for (ControlPoint c : C) {
@@ -322,7 +324,7 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
         // Find optimal Ri for each cell
         std::vector<MatrixXd> R(V.rows()); // Matrix of local rotations
         for (int i = 0; i < V.rows(); i++) {
-            MatrixXd Si = compute_covariance_matrix(V_centered, new_V_centered, i);
+            MatrixXd Si = compute_covariance_matrix(V_centered, new_V, i);
 
             JacobiSVD<MatrixXd> svd(Si, ComputeThinU | ComputeThinV);
 
@@ -333,30 +335,30 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
             R[i] = Ri;
 
             // DEBUG
-            std::cout << "Ri" << std::endl;
-            std::cout << Ri << std::endl;
+            /*std::cout << "Ri" << std::endl;
+            std::cout << Ri << std::endl;*/
         }
 
 
         // Find optimal p'
         MatrixXd b = compute_b(V_centered, R, C_centered);
 
-        std::cout << "b" << std::endl;
-        std::cout << b << std::endl;
+        //std::cout << "b" << std::endl;
+        //std::cout << b << std::endl;
 
         //SimplicialCholesky<SparseMatrix<double>> solver;
         //LLT<MatrixXd> chol(L);
 
         new_V = L.ldlt().solve(b);
 
-        std::cout << "new_v" << std::endl;
-        std::cout << new_V << std::endl;
+        //std::cout << "new_v" << std::endl;
+        //std::cout << new_V << std::endl;
 
         //std::cout << L * new_V << std::endl;
 
         // Align centroids A REVOIR
         // TODO: add rotation in the formula ?
-        std::cout << new_V.colwise().mean() << std::endl;
+        //std::cout << new_V.colwise().mean() << std::endl;
         VectorXd mean = VectorXd::Zero(3);
         for (int i = 0; i < new_V.rows(); i++) {
             std::pair<bool, Vector3d> constraint = isConstraint(C, i);
@@ -377,18 +379,16 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
             }
         }
 
-        new_V_centered = new_V;
-
         //std::cout << new_V.colwise().mean() << std::endl;
 
-        std::cout << "new_v_centered" << std::endl;
+        /*std::cout << "new_v_centered" << std::endl;
         std::cout << new_V << std::endl;
 
         std::cout << "L * new_V" << std::endl;
         std::cout << L * new_V << std::endl;
 
         std::cout << "L * V" << std::endl;
-        std::cout << L * V << std::endl;
+        std::cout << L * V << std::endl;*/
     }
     
 
