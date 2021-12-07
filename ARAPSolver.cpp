@@ -278,7 +278,7 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
     compute_laplacian_matrix(C);
 
     // ITERATE
-    for (int k = 0; k < 3; k++) {
+    for (int k = 0; k < 1; k++) {
 
         // Find optimal Ri for each cell
         std::vector<MatrixXd> R(V.rows()); // Matrix of local rotations
