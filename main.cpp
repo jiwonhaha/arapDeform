@@ -1,5 +1,6 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/readOFF.h>
+#include <igl/upsample.h>
 #include <igl/arap.h>
 #include "ARAPSolver.h"
 #include "Mesh.h"
@@ -11,7 +12,7 @@ int main(int argc, char *argv[])
 {
     // Inline mesh of a cube
     Mesh mesh = Mesh();
-    /*mesh.V = (Eigen::MatrixXd(8,3)<<
+    mesh.V = (Eigen::MatrixXd(8,3)<<
                 0.0,0.0,0.0,
                 0.0,0.0,1.0,
                 0.0,1.0,0.0,
@@ -32,9 +33,18 @@ int main(int argc, char *argv[])
                 1,5,6,
                 1,6,2,
                 2,6,8,
-                2,8,4).finished().array()-1;*/
+                2,8,4).finished().array()-1;
 
-    igl::readOFF("C:/Users/Lauriane/OneDrive/Documents/Cours/IGD/X-INF574/Project/ARAP/data/sphere2.off", mesh.V, mesh.F);
+    //igl::readOFF("C:/Users/Lauriane/OneDrive/Documents/Cours/IGD/X-INF574/Project/ARAP/data/sphere2.off", mesh.V, mesh.F);
+
+    for (int i = 0; i < 2; i++) {
+        MatrixXd V_sub(mesh.V.rows(), mesh.V.cols());
+        MatrixXi F_sub(mesh.F.rows(), mesh.F.cols());
+        igl::upsample(mesh.V, mesh.F, V_sub, F_sub);
+
+        mesh.V = V_sub;
+        mesh.F = F_sub;
+    }
 
 
     // Find one-ring neighbors
