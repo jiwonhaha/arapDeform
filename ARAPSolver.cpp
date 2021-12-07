@@ -271,11 +271,6 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
     std::cout << "}; \n";*/
 
 
-    // Compute weights
-    compute_edges_weight(V, F);
-
-    // Precompute Laplacian-Beltrami matrix
-    compute_laplacian_matrix(C);
 
     // ITERATE
     for (int k = 0; k < 10; k++) {

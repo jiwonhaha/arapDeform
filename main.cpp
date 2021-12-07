@@ -50,6 +50,13 @@ int main(int argc, char *argv[])
     // Find one-ring neighbors
     find_neighbors(mesh.V, mesh.F);  
 
+    // Compute weights
+    compute_edges_weight(mesh.V, mesh.F);
+
+    // Precompute Laplacian-Beltrami matrix
+    std::vector<ControlPoint> C = mesh.getControlPoints();
+    compute_laplacian_matrix(C);
+
 
     // Setup the interface
     igl::opengl::glfw::Viewer viewer;

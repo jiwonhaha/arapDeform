@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "ARAPSolver.h"
 
 
 Eigen::MatrixXd Mesh::getVerticesFromIndex(const std::vector<int>& indexes) const
@@ -81,6 +82,8 @@ void Mesh::addControlPoint(int vertexIndex)
 	if (vertexIndex < 0 || vertexIndex >= V.rows() || isAControlPoint(vertexIndex))
 		return;
 	controlPoints.push_back(ControlPoint(vertexIndex, V.row(vertexIndex)));
+
+	compute_laplacian_matrix(controlPoints);
 }
 
 void Mesh::addControlPoint(int vertexIndex, Eigen::RowVector3d position)
@@ -98,6 +101,8 @@ void Mesh::addControlPoint(int vertexIndex, Eigen::RowVector3d position)
 
 	// Else just add it
 	controlPoints.push_back(ControlPoint(vertexIndex, position));
+
+	compute_laplacian_matrix(controlPoints);
 }
 
 void Mesh::removeControlPoint(int vertexIndex)
@@ -115,6 +120,8 @@ void Mesh::removeControlPoint(int vertexIndex)
 
 	if (index != -1)
 		controlPoints.erase(std::next(controlPoints.begin(), index));
+
+	compute_laplacian_matrix(controlPoints);
 }
 
 void Mesh::printControlPoints() const
