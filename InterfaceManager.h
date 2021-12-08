@@ -25,6 +25,6 @@ private:
 public:
 	void onMousePressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, bool isShiftPressed);
 	void onMouseReleased();
-	bool onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mesh);
-	void onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, unsigned char key, bool isShiftPressed);
+	bool onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, bool& needArap);
+	void onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, unsigned char key, bool isShiftPressed, bool& needArap);
 };

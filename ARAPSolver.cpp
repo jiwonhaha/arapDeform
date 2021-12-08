@@ -16,7 +16,7 @@ float eps = 1e-10;
  *
  * Out : Vector of list of neigbors indices
  */
-void find_neighbors(const MatrixXd V, const MatrixXi F) {
+void find_neighbors(const MatrixXd& V, const MatrixXi& F) {
     std::vector<std::list<int>> myNeighbors(V.rows());
 
     for (int i = 0; i < F.rows(); i++) {
@@ -103,11 +103,11 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
     //std::cout << weights << std::endl;
 }
 
-void compute_laplacian_matrix(const std::vector<ControlPoint> C) {
+void compute_laplacian_matrix(const std::vector<ControlPoint>& C) {
     L = weights;
 
     // Add constraints
-    for (ControlPoint c : C) {
+    for (const ControlPoint& c : C) {
         int index = c.vertexIndexInMesh;
         L.row(index) = VectorXd::Zero(L.cols());
         L.col(index) = VectorXd::Zero(L.rows());
@@ -126,7 +126,7 @@ void compute_laplacian_matrix(const std::vector<ControlPoint> C) {
     //std::cout << L << std::endl;
 }
 
-MatrixXd compute_covariance_matrix(MatrixXd V, MatrixXd new_V, int index) {
+MatrixXd compute_covariance_matrix(const MatrixXd& V, const MatrixXd& new_V, const int& index) {
     MatrixXd Si(V.cols(), V.cols());
 
     // Retrieve neighbors of v
@@ -190,9 +190,9 @@ MatrixXd compute_covariance_matrix(MatrixXd V, MatrixXd new_V, int index) {
     return Si;
 }
 
-std::pair<bool, Vector3d> isConstraint(const std::vector<ControlPoint> C, int index) {
+std::pair<bool, Vector3d> isConstraint(const std::vector<ControlPoint>& C, int index) {
 
-    for (ControlPoint c : C) {
+    for (const ControlPoint& c : C) {
         if (index == c.vertexIndexInMesh) {
             return std::pair<bool, Vector3d>(true, c.wantedVertexPosition);
         }
@@ -200,7 +200,7 @@ std::pair<bool, Vector3d> isConstraint(const std::vector<ControlPoint> C, int in
     return std::pair<bool, Vector3d>(false, Vector3d(0,0,0));
 }
 
-MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std::vector<ControlPoint> C) {
+MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std::vector<ControlPoint>& C) {
 
     MatrixXd b = MatrixXd::Zero(V.rows(), V.cols());
 
@@ -244,18 +244,52 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
     return b;
 }
 
+
+// Recenter new_V on V ignoring the control points
+void RecenterNewV(const MatrixXd& V, MatrixXd& new_V, const std::vector<ControlPoint>& C)
+{
+    VectorXd mean_V = VectorXd::Zero(3);
+    VectorXd mean_newV = VectorXd::Zero(3);
+    for (int i = 0; i < V.rows(); i++) {
+        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
+
+        if (constraint.first)
+            continue;
+
+        mean_V += V.row(i);
+        mean_newV += new_V.row(i);
+    }
+    const int count = V.rows() - C.size();
+    mean_V /= count;
+    mean_newV /= count;
+
+
+
+    for (int i = 0; i < new_V.rows(); i++) {
+        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
+        if (!constraint.first) {
+            new_V.row(i) += mean_V - mean_newV;
+        }
+        else {
+            new_V.row(i) = constraint.second;
+        }
+    }
+}
+
+
+
 /* Apply arap algo for one iteration
  * V : Matrix of initial points (previous frame)
  * C : Constraints vertices 
  *
  * Out : Update V 
  */
-MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint> C) {
+MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint>& C) {
     // Center mesh and constraint points
     MatrixXd V_centered = V.rowwise() - V.colwise().mean();
 
     std::vector<ControlPoint> C_centered;
-    for (ControlPoint c : C) {
+    for (const ControlPoint& c : C) {
         C_centered.push_back(ControlPoint(c.vertexIndexInMesh, c.wantedVertexPosition - V.colwise().mean()));
     }
 
@@ -273,7 +307,7 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
 
 
     // ITERATE
-    for (int k = 0; k < 10; k++) {
+    for (int k = 0; k < 5; k++) {
 
         // Find optimal Ri for each cell
         std::vector<MatrixXd> R(V.rows()); // Matrix of local rotations
@@ -284,6 +318,29 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
 
             DiagonalMatrix<double, 3> D(1, 1, (svd.matrixV() * svd.matrixU().transpose()).determinant());
             MatrixXd Ri = svd.matrixV() * D * svd.matrixU().transpose();
+
+            /* =====    More Direct Application of the Paper    =====
+            MatrixXd svdU = svd.matrixU();
+            MatrixXd svdV = svd.matrixV();
+            MatrixXd Ri = svdV * svdU.transpose();    // Initial Guest
+            int a;
+            if (Ri.determinant() <= 0)
+            {
+                // Get the smallest singular value
+                const VectorXd& singVals = svd.singularValues();
+                double i_SmallestSingVal = 0;
+                for (int i = 1; i < singVals.rows(); i++)
+                    if (singVals(i) < singVals(i_SmallestSingVal))
+                        i_SmallestSingVal = i;
+
+                // change the corresponding U's col sign
+                svdU.col(i_SmallestSingVal) = -1 * svdU.col(i_SmallestSingVal);
+
+                // recompute Ri
+                Ri = svdV * svdU.transpose();
+            }
+            */
+
 
             // Store Ri
             R[i] = Ri;
@@ -299,30 +356,8 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
 
         new_V = L.ldlt().solve(b);
 
-        // Shift the new centroid to the previous centroid of the mesh (is it correct?)
-        VectorXd mean = VectorXd::Zero(3);
-        for (int i = 0; i < new_V.rows(); i++) {
-            std::pair<bool, Vector3d> constraint = isConstraint(C, i);
-            if (!constraint.first) {
-                mean += new_V.row(i);
-            }
-        }
-        mean /= (new_V.rows() - C.size());
-
-        // R[i] nécessaire dans la translation ??
-        for (int i = 0; i < new_V.rows(); i++) {
-            std::pair<bool, Vector3d> constraint = isConstraint(C, i);
-            if (!constraint.first) {
-                new_V.row(i) += -mean + V.colwise().mean().transpose();
-            }
-            else {
-                new_V.row(i) += V.colwise().mean().transpose();
-            }
-        }
+        RecenterNewV(V, new_V, C);
     }
-    
-
-
 
     return new_V;
 }

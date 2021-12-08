@@ -192,7 +192,7 @@ void InterfaceManager::onMouseReleased()
     mouseIsPressed = false;
 }
 
-bool InterfaceManager::onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mesh)
+bool InterfaceManager::onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, bool& needArap)
 {
     if (!mouseIsPressed)
         return false;
@@ -206,10 +206,16 @@ bool InterfaceManager::onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mes
         projectOnMoveDirection(viewer, projPoint);
 
         Eigen::RowVector3d mouseMovement = (lastProjectedPoint - projPoint).transpose();
-        lastProjectedPoint = projPoint;
+        if (mouseMovement.norm() > 0.2)
+            mouseMovement *= (0.2 / (mouseMovement.norm()));
+        lastProjectedPoint = projPoint;    // lastProjectedPoint + mouseMovement.transpose(); //
 
         for (auto& cpp : getSelectedControlPoints(mesh))
-                cpp->wantedVertexPosition += mouseMovement;
+        {
+            cpp->wantedVertexPosition += mouseMovement;
+            needArap = true;
+        }
+
         
         displaySelectedPoints(viewer, mesh);
         return true;
@@ -236,7 +242,7 @@ void InterfaceManager::projectOnMoveDirection(igl::opengl::glfw::Viewer& viewer,
     }
 }
 
-void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, unsigned char key, bool isShiftPressed)
+void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, unsigned char key, bool isShiftPressed, bool& needArap)
 {
     std::cout << "pressed Key: " << key << " " << (unsigned int)key << std::endl;
     if (key == 'G')
@@ -250,14 +256,16 @@ void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mes
         for (const auto& i : selection)
             mesh.addControlPoint(i);
         displaySelectedPoints(viewer, mesh);
-        mesh.printControlPoints();
+        //mesh.printControlPoints();
+        needArap = true;
     }
     else if (key == 'R')
     {
         for (const auto& i : selection)
             mesh.removeControlPoint(i);
         displaySelectedPoints(viewer, mesh);
-        mesh.printControlPoints();
+        //mesh.printControlPoints();
+        needArap = true;
     }
     else if (key == 'X')
         setMoveDirection(Eigen::Vector3d(1, 0, 0), isShiftPressed, viewer, mesh);
