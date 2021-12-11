@@ -104,22 +104,28 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
 }
 
 void compute_laplacian_matrix(const std::vector<ControlPoint>& C) {
-    L = weights;
+    L = -weights;
 
-    // Add constraints
-    for (const ControlPoint& c : C) {
+    // Add constraints (Article)
+    /*for (const ControlPoint& c : C) {
         int index = c.vertexIndexInMesh;
         L.row(index) = VectorXd::Zero(L.cols());
         L.col(index) = VectorXd::Zero(L.rows());
         L(index, index) = 1;
-    }
+    }*/
 
     // Add diagonal value
     for (int i = 0; i < L.rows(); i++) {
         // If it's not a constraint point
         if (L(i, i) != 1) {
-            L(i, i) = -L.row(i).sum();
+            L(i, i) += -L.row(i).sum();
         }
+    }
+
+    // Add constraints (Teacher)
+    for (const ControlPoint& c : C) {
+        int index = c.vertexIndexInMesh;
+        L(index, index) += 1;
     }
 
     // DEBUG
@@ -213,9 +219,10 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
         // Rotation matrix of i-th vertex
         MatrixXd Ri = R[i];
 
+        // (Article)
         // For each neighbor add the corresponding term
         // Check if the point is a constraint
-        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
+        /*std::pair<bool, Vector3d> constraint = isConstraint(C, i);
 
         if (constraint.first) {
             b.row(i) = (VectorXd) constraint.second;
@@ -235,8 +242,41 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
                     // Neighbor Rotation matrix
                     MatrixXd Rj = R[*it];
 
-                    b.row(i) -= (double)wij / 2 * (Ri + Rj) * (vi - neighbor);
+                    b.row(i) += (double)wij / 2 * (Ri + Rj) * (vi - neighbor);
                 }
+            }
+        }*/
+
+        // (Teacher)
+        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
+
+        if (constraint.first) {
+            //b.row(i) += (VectorXd)constraint.second;
+            b.row(i) += V.row(i);
+        }
+        else {
+            // For each neighbor
+            for (std::list<int>::iterator it = neighbors_v.begin(); it != neighbors_v.end(); ++it) {
+                std::pair<bool, Vector3d> constraint_n = isConstraint(C, *it);
+
+                // Check if the neighbor is a constraint
+                /*VectorXd neighbor;
+                if (!constraint_n.first) {
+                    neighbor = V.row(*it);
+                }
+                else {
+                    neighbor = constraint_n.second;
+                }*/
+
+                VectorXd neighbor = V.row(*it);
+
+                // Weight of the edge
+                double wij = weights(i, *it);
+
+                // Neighbor Rotation matrix
+                MatrixXd Rj = R[*it];
+
+                b.row(i) += (double)wij / 2 * (Ri + Rj) * (vi - neighbor);
             }
         }
     }
@@ -295,6 +335,9 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
 
     // Initialize updated matrix
     MatrixXd new_V = V_centered;
+    for (const ControlPoint& c : C_centered) {
+        new_V.row(c.vertexIndexInMesh) = c.wantedVertexPosition;
+    }
 
     // DEBUG
     /*std::cout << "C = { ";
@@ -354,6 +397,7 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
         // Find optimal p'
         MatrixXd b = compute_b(V_centered, R, C_centered);
 
+        V_centered = new_V;
         new_V = L.ldlt().solve(b);
 
         RecenterNewV(V, new_V, C);
