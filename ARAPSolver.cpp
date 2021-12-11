@@ -252,6 +252,7 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
 
         if (constraint.first) {
             //b.row(i) += (VectorXd)constraint.second;
+            std::cout << constraint.second << std::endl;
             b.row(i) += V.row(i);
         }
         else {
@@ -326,7 +327,7 @@ void RecenterNewV(const MatrixXd& V, MatrixXd& new_V, const std::vector<ControlP
  */
 MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint>& C) {
     // Center mesh and constraint points
-    MatrixXd V_centered = V.rowwise() - V.colwise().mean();
+    /*MatrixXd V_centered = V.rowwise() - V.colwise().mean();
 
     std::vector<ControlPoint> C_centered;
     for (const ControlPoint& c : C) {
@@ -337,7 +338,7 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
     MatrixXd new_V = V_centered;
     for (const ControlPoint& c : C_centered) {
         new_V.row(c.vertexIndexInMesh) = c.wantedVertexPosition;
-    }
+    }*/
 
     // DEBUG
     /*std::cout << "C = { ";
@@ -348,9 +349,12 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
     std::cout << "}; \n";*/
 
 
+    MatrixXd V_centered = V;
+    std::vector<ControlPoint> C_centered = C;
+    MatrixXd new_V = V_centered;
 
     // ITERATE
-    for (int k = 0; k < 5; k++) {
+    for (int k = 0; k < 10; k++) {
 
         // Find optimal Ri for each cell
         std::vector<MatrixXd> R(V.rows()); // Matrix of local rotations
@@ -400,7 +404,9 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
         V_centered = new_V;
         new_V = L.ldlt().solve(b);
 
-        RecenterNewV(V, new_V, C);
+        std::cout << new_V << std::endl;
+
+        //RecenterNewV(V, new_V, C);
     }
 
     return new_V;
