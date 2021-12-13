@@ -72,7 +72,6 @@ void InterfaceManager::displaySelectedPoints(igl::opengl::glfw::Viewer& viewer, 
     if (moveSelectionMode)
     {
         viewer.data().set_edges(cpNotSelected_edgesVert, cpNotSelected_edges, Eigen::RowVector3d(0, 0.5, 0));
-        //viewer.data().add_edges(cpSelected_edgesVert, cpSelected_edges, Eigen::RowVector3d(0, 1, 0.5));
         viewer.data().add_edges(cpSelected, cppSelected, Eigen::RowVector3d(0, 1, 0.5));
         viewer.data().set_points(cpNotSelected, Eigen::RowVector3d(0, 0.5, 0));
         viewer.data().add_points(cppNotSelected, Eigen::RowVector3d(0, 0.5, 0));
@@ -83,7 +82,6 @@ void InterfaceManager::displaySelectedPoints(igl::opengl::glfw::Viewer& viewer, 
     else
     {
         viewer.data().set_edges(cpNotSelected_edgesVert, cpNotSelected_edges, Eigen::RowVector3d(0, 0.5, 0));
-        //viewer.data().add_edges(cpSelected_edgesVert, cpSelected_edges, Eigen::RowVector3d(0, 1, 0));
         viewer.data().add_edges(cpSelected, cppSelected, Eigen::RowVector3d(0, 1, 0));
         viewer.data().set_points(cpNotSelected, Eigen::RowVector3d(0, 0.5, 0));
         viewer.data().add_points(cppNotSelected, Eigen::RowVector3d(0, 0.5, 0));
@@ -149,12 +147,6 @@ void InterfaceManager::onMousePressed(igl::opengl::glfw::Viewer& viewer, Mesh& m
     if (igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core().view,
         viewer.core().proj, viewer.core().viewport, mesh.V, mesh.F, fid, bc))
     {
-        // paint hit in orange
-        Eigen::MatrixXd C = Eigen::MatrixXd::Constant(mesh.F.rows(), 3, 1);
-        C.row(fid) << 0.94, 0.69, 0.36;
-        viewer.data().set_colors(C);
-
-
         int closestVertex = 0;
         for (int i = 1; i < 3; i++)
             if (bc[i] > bc[closestVertex])
@@ -192,7 +184,7 @@ void InterfaceManager::onMouseReleased()
     mouseIsPressed = false;
 }
 
-bool InterfaceManager::onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, bool& needArap)
+bool InterfaceManager::onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, bool& needArap, const EInitialisationType& initialisationType)
 {
     if (!mouseIsPressed)
         return false;
@@ -206,14 +198,13 @@ bool InterfaceManager::onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mes
         projectOnMoveDirection(viewer, projPoint);
 
         Eigen::RowVector3d mouseMovement = (lastProjectedPoint - projPoint).transpose();
-        /*if (mouseMovement.norm() > 0.2)
-            mouseMovement *= (0.2 / (mouseMovement.norm()));*/
-        lastProjectedPoint = projPoint;    // lastProjectedPoint + mouseMovement.transpose(); //
+        lastProjectedPoint = projPoint;
+        bool canDoARAPOnMove = initialisationType == EInitialisationType::e_LastFrame;
 
         for (auto& cpp : getSelectedControlPoints(mesh))
         {
             cpp->wantedVertexPosition += mouseMovement;
-            needArap = true;
+            needArap = canDoARAPOnMove;
         }
 
         
@@ -242,10 +233,24 @@ void InterfaceManager::projectOnMoveDirection(igl::opengl::glfw::Viewer& viewer,
     }
 }
 
-void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, unsigned char key, bool isShiftPressed, bool& needArap)
+void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, unsigned char key, bool isShiftPressed, bool& needArap, EInitialisationType& initType)
 {
-    std::cout << "pressed Key: " << key << " " << (unsigned int)key << std::endl;
-    if (key == 'G')
+    //std::cout << "pressed Key: " << key << " " << (unsigned int)key << std::endl;
+    if (key == 'A')
+    {
+        needArap = true;
+    }
+    else if (key == '1')
+    {
+        std::cout << "ARAP Initialisation set to : \t\tLast Frame" << std::endl;
+        initType = EInitialisationType::e_LastFrame;
+    }
+    else if (key == '2')
+    {
+        std::cout << "ARAP Initialisation set to : \t\tLaplace intialisation" << std::endl;
+        initType = EInitialisationType::e_Laplace;
+    }
+    else if (key == 'G')
     {
         // Swap mode : move or select
         moveSelectionMode = !moveSelectionMode;
@@ -256,16 +261,12 @@ void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mes
         for (const auto& i : selection)
             mesh.addControlPoint(i);
         displaySelectedPoints(viewer, mesh);
-        //mesh.printControlPoints();
-        needArap = true;
     }
     else if (key == 'R')
     {
         for (const auto& i : selection)
             mesh.removeControlPoint(i);
         displaySelectedPoints(viewer, mesh);
-        //mesh.printControlPoints();
-        needArap = true;
     }
     else if (key == 'X')
         setMoveDirection(Eigen::Vector3d(1, 0, 0), isShiftPressed, viewer, mesh);
@@ -288,6 +289,9 @@ void InterfaceManager::setMoveDirection(const Eigen::Vector3d& direction, const 
 void InterfaceManager::displayKeyBindOnConsole()
 {
     std::cout << "\n\nAs-Rigid-As-Posible Interface usage:\n";
+    std::cout << "  A,a     Starts an ARAP deformation (Key Q,q on azerty keyboards)\n";
+    std::cout << "  1,&     Set the ARAP intialisation method on 'Last Frame'\n";
+    std::cout << "  2,é     Set the ARAP intialisation method on 'Laplacian'\n";
     std::cout << "  G,g     Toggle interface mode between selection and Grabing\n\n";
 
     std::cout << "\t\t--- Selection Mode ---\n";

@@ -1,6 +1,7 @@
 #pragma once
 #include <igl/opengl/glfw/Viewer.h>
 #include "Mesh.h"
+#include "ARAPInitEnum.h"
 
 class InterfaceManager
 {
@@ -17,7 +18,6 @@ private:
 	std::vector<ControlPoint*> getSelectedControlPoints(Mesh& mesh);
 	std::vector<int> getSelectedControlPointsIndex(const Mesh& mesh, bool invert = false);	// if invert = false, returns the control points that are in the selection ; if = true, returns the selected points that are not control points
 	std::vector<int> getNonSelectedControlPointsIndex(const Mesh& mesh);						// returns not selected control points
-	void displaySelectedPoints(igl::opengl::glfw::Viewer& viewer, const Mesh& mesh);
 	void displayMoveAxis(igl::opengl::glfw::Viewer& viewer, const Eigen::Vector3d& axisVector, const Eigen::MatrixXd& cppSelected);
 	void projectOnMoveDirection(igl::opengl::glfw::Viewer& viewer, Eigen::Vector3d& projectionReceiver);
 	void setMoveDirection(const Eigen::Vector3d& direction, const bool& isShiftPressed, igl::opengl::glfw::Viewer& viewer, const Mesh& mesh);
@@ -25,8 +25,9 @@ private:
 public:
 	void onMousePressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, bool isShiftPressed);
 	void onMouseReleased();
-	bool onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, bool& needArap);
-	void onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, unsigned char key, bool isShiftPressed, bool& needArap);
+	bool onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, bool& needArap, const EInitialisationType& initialisationType);
+	void onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, unsigned char key, bool isShiftPressed, bool& needArap, EInitialisationType& initType);
+	void displaySelectedPoints(igl::opengl::glfw::Viewer& viewer, const Mesh& mesh);
 
 	static void displayKeyBindOnConsole();
 };

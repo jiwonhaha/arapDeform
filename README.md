@@ -17,6 +17,9 @@ Here are the different commands:
 
 ```
 			---		Common 		---
+A,a				Starts an ARAP deformation (Key Q,q on azerty keyboards)
+1,&				Set the ARAP intialisation method on 'Last Frame'
+2,Ú				Set the ARAP intialisation method on 'Laplacian'
 G,g				Toggle interface mode between Selection and Grabing
 
 			---	Selection Mode	---

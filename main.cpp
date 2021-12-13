@@ -1,6 +1,5 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/readOFF.h>
-//#include <igl/readPLY.h>
 #include <igl/upsample.h>
 #include <igl/arap.h>
 #include "ARAPSolver.h"
@@ -18,7 +17,6 @@ int main(int argc, char *argv[])
         std::cout << "Reading input file: " << argv[1] << std::endl;
         igl::readOFF(argv[1], mesh.V, mesh.F);
         std::cout << "Reading complete !" << std::endl;
-        std::cout << mesh.V.rows() << " vertices loaded." << std::endl;
     }
     else
     {
@@ -61,10 +59,12 @@ int main(int argc, char *argv[])
         mesh.V = mesh.V.rowwise() - mesh.V.colwise().mean();
 
         std::cout << "Using default mesh: Cube subdivided " << subNb << " times." << std::endl;
-        std::cout << mesh.V.rows() << " vertices loaded." << std::endl;
     }
+    std::cout << mesh.V.rows() << " vertices loaded." << std::endl;
 
     bool needToPerformArap = false;
+    EInitialisationType initialisationType = EInitialisationType::e_LastFrame;
+   
 
     // Find one-ring neighbors
     find_neighbors(mesh.V, mesh.F);  
@@ -76,16 +76,17 @@ int main(int argc, char *argv[])
     std::vector<ControlPoint> C = mesh.getControlPoints();
     compute_laplacian_matrix(C);
 
-    std::cout << "" << std::endl;
 
     // Setup the interface
+    std::cout << "" << std::endl;
     igl::opengl::glfw::Viewer viewer;
     InterfaceManager interfaceManager = InterfaceManager();
-    viewer.callback_pre_draw = [&mesh, &needToPerformArap](igl::opengl::glfw::Viewer& viewer)->bool
+    viewer.callback_pre_draw = [&interfaceManager, &mesh, &needToPerformArap, &initialisationType](igl::opengl::glfw::Viewer& viewer)->bool
     {
         if (needToPerformArap)
         {
-            mesh.V = arap(mesh.V, mesh.F, mesh.getControlPoints(), 100, 0);
+            mesh.V = arap(mesh.V, mesh.F, mesh.getControlPoints(), 100, initialisationType);
+            interfaceManager.displaySelectedPoints(viewer, mesh);
             viewer.data().set_mesh(mesh.V, mesh.F);
             needToPerformArap = false;
         }
@@ -102,13 +103,13 @@ int main(int argc, char *argv[])
         interfaceManager.onMouseReleased();
         return false;
     };
-    viewer.callback_mouse_move = [&interfaceManager, &mesh, &needToPerformArap](igl::opengl::glfw::Viewer& viewer, int, int modifier)->bool
+    viewer.callback_mouse_move = [&interfaceManager, &mesh, &needToPerformArap, &initialisationType](igl::opengl::glfw::Viewer& viewer, int, int modifier)->bool
     {
-        return interfaceManager.onMouseMoved(viewer, mesh, needToPerformArap);
+        return interfaceManager.onMouseMoved(viewer, mesh, needToPerformArap, initialisationType);
     };
-    viewer.callback_key_down = [&interfaceManager, &mesh, &needToPerformArap](igl::opengl::glfw::Viewer& viewer, unsigned char key, int modifier)->bool
+    viewer.callback_key_down = [&interfaceManager, &mesh, &needToPerformArap, &initialisationType](igl::opengl::glfw::Viewer& viewer, unsigned char key, int modifier)->bool
     {
-        interfaceManager.onKeyPressed(viewer, mesh, key, modifier & 0x00000001, needToPerformArap);
+        interfaceManager.onKeyPressed(viewer, mesh, key, modifier & 0x00000001, needToPerformArap, initialisationType);
         return false;
     };
     

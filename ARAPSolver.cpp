@@ -347,18 +347,20 @@ float compute_energy(const MatrixXd& V, const MatrixXd& new_V, const std::vector
  *
  * Out : Update V 
  */
-MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint>& C, const int& kmax, const int& init) {
+MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint>& C, const int& kmax, const EInitialisationType& init) {
 
     MatrixXd previous_V = V;
 
     MatrixXd new_V;
     // User interaction
-    if (init == 0) {
+    if (init == EInitialisationType::e_LastFrame) {
         new_V = V;
+        std::cout << "Initiated with last frame" << std::endl;
     }
     // Laplacian initialization
-    else if (init == 1) {
+    else if (init == EInitialisationType::e_Laplace) {
         new_V = laplacian_init(V, C);
+        std::cout << "Initiated with laplacian" << std::endl;
     }
     
 
