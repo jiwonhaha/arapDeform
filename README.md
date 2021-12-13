@@ -9,13 +9,14 @@ This is achieved using an algorithm explained on [this paper](https://igl.ethz.c
 ## Interface
 
 Since we wanted to build an interaction version of the ARAP method, we had to implement an interface to go with it.
-We decided to go with a design where there are 2 functionnement  modes.
-The first one is the selection mode, it allows to select points on the mesh and to add them or remove them from the mesh's control point list.
-The second mode is the grab mode, where the user can move the selected control points and see the ARAP algorithm in action.
-
+We decided to go with a design where there are 2 functionnement  modes.<br>
+The first one is the selection mode, it allows to select points on the mesh and to add them or remove them from the mesh's control point list.<br>
+The second mode is the grab mode, where the user can move the selected control points and see the ARAP algorithm in action.<br>
+<br>
 Here are the different commands:
 
-`			---		Common 		---
+```
+			---		Common 		---
 G,g				Toggle interface mode between Selection and Grabing
 
 			---	Selection Mode	---
@@ -31,13 +32,14 @@ Y,y				Set move axis to Y
 Z,z				Set move axis to Z (Key W,w on azerty keyboards)
 X,x + shift		Set move plane to (Y,Z)
 Y,y + shift		Set move plane to (X,Z)
-Z,z + shift		Set move plane to (X,Y) (Key W,w on azerty keyboards)`
+Z,z + shift		Set move plane to (X,Y) (Key W,w on azerty keyboards)
+```
 
 
-In the selection mode, a selected point will appear as red, a selected control point as light green, and a not selected control point as drak green.
-In the grab mode, a selected point will appear as orange, a selected control point as a blueish light green, and a not selected control point as the same drak green.
-If a control point isn't at its position defined by the user, an edge will link the user's wanted position for this control point and the actual position on the mesh of the control point.
-
+In the selection mode, a selected point will appear as red, a selected control point as light green, and a not selected control point as drak green.<br>
+In the grab mode, a selected point will appear as orange, a selected control point as a blueish light green, and a not selected control point as the same drak green.<br>
+If a control point isn't at its position defined by the user, an edge will link the user's wanted position for this control point and the actual position on the mesh of the control point.<br>
+<br>
 When grabing a control point, the move axis appears. The red one is the X axis, the green one is the Y one, and the blue one is the Z one.
 
 
@@ -70,9 +72,11 @@ via `cmake-gui` or `ccmake`.
 
 Compile this project using the standard cmake routine:
 
+```
     mkdir build
     cd build
     cmake ..
     make
+```
 
 This should find and build the dependencies and create the needed files, including the project .sln file.
