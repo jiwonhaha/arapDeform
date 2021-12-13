@@ -100,19 +100,12 @@ void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
     }
 
     // DEBUG
-    //std::cout << weights << std::endl;
+    /*std::cout << "weights" << std::endl;
+    std::cout << weights << std::endl;*/
 }
 
 void compute_laplacian_matrix(const std::vector<ControlPoint>& C) {
     L = -weights;
-
-    // Add constraints (Article)
-    /*for (const ControlPoint& c : C) {
-        int index = c.vertexIndexInMesh;
-        L.row(index) = VectorXd::Zero(L.cols());
-        L.col(index) = VectorXd::Zero(L.rows());
-        L(index, index) = 1;
-    }*/
 
     // Add diagonal value
     for (int i = 0; i < L.rows(); i++) {
@@ -122,14 +115,17 @@ void compute_laplacian_matrix(const std::vector<ControlPoint>& C) {
         }
     }
 
-    // Add constraints (Teacher)
+    // Add constraints (Article)
     for (const ControlPoint& c : C) {
         int index = c.vertexIndexInMesh;
-        L(index, index) += 1;
+        L.row(index) = VectorXd::Zero(L.cols());
+        L.col(index) = VectorXd::Zero(L.rows());
+        L(index, index) = 1;
     }
 
     // DEBUG
-    //std::cout << L << std::endl;
+    /*std::cout << 'L' << std::endl;
+    std::cout << L << std::endl;*/
 }
 
 MatrixXd compute_covariance_matrix(const MatrixXd& V, const MatrixXd& new_V, const int& index) {
@@ -176,15 +172,15 @@ MatrixXd compute_covariance_matrix(const MatrixXd& V, const MatrixXd& new_V, con
         D.diagonal()[k] = weights(index, *it);
     }
 
-
+    
 
     Si = P_init * D * P_new.transpose();
 
     // DEBUG
     /*std::cout << "D" << std::endl;
-    std::cout << D.diagonal() << std::endl;
+    std::cout << D.diagonal() << std::endl;*/
 
-    std::cout << "P_init" << std::endl;
+    /*std::cout << "P_init" << std::endl;
     std::cout << P_init << std::endl;
 
     std::cout << "P_new" << std::endl;
@@ -219,10 +215,9 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
         // Rotation matrix of i-th vertex
         MatrixXd Ri = R[i];
 
-        // (Article)
         // For each neighbor add the corresponding term
         // Check if the point is a constraint
-        /*std::pair<bool, Vector3d> constraint = isConstraint(C, i);
+        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
 
         if (constraint.first) {
             b.row(i) = (VectorXd) constraint.second;
@@ -232,44 +227,11 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
             for (std::list<int>::iterator it = neighbors_v.begin(); it != neighbors_v.end(); ++it) {
                 std::pair<bool, Vector3d> constraint_n = isConstraint(C, *it);
 
-                // Check if the neighbor is a constraint
-                if (!constraint_n.first) {
-                    VectorXd neighbor = V.row(*it);
-
-                    // Weight of the edge
-                    double wij = weights(i, *it);
-
-                    // Neighbor Rotation matrix
-                    MatrixXd Rj = R[*it];
-
-                    b.row(i) += (double)wij / 2 * (Ri + Rj) * (vi - neighbor);
-                }
-            }
-        }*/
-
-        // (Teacher)
-        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
-
-        if (constraint.first) {
-            //b.row(i) += (VectorXd)constraint.second;
-            std::cout << constraint.second << std::endl;
-            b.row(i) += V.row(i);
-        }
-        else {
-            // For each neighbor
-            for (std::list<int>::iterator it = neighbors_v.begin(); it != neighbors_v.end(); ++it) {
-                std::pair<bool, Vector3d> constraint_n = isConstraint(C, *it);
-
-                // Check if the neighbor is a constraint
-                /*VectorXd neighbor;
-                if (!constraint_n.first) {
-                    neighbor = V.row(*it);
-                }
-                else {
-                    neighbor = constraint_n.second;
-                }*/
-
                 VectorXd neighbor = V.row(*it);
+                
+                if (constraint_n.first) {
+                    b.row(i) += (double)weights(i, *it) * constraint_n.second;
+                }
 
                 // Weight of the edge
                 double wij = weights(i, *it);
@@ -278,45 +240,13 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
                 MatrixXd Rj = R[*it];
 
                 b.row(i) += (double)wij / 2 * (Ri + Rj) * (vi - neighbor);
+
             }
         }
     }
 
     return b;
 }
-
-
-// Recenter new_V on V ignoring the control points
-void RecenterNewV(const MatrixXd& V, MatrixXd& new_V, const std::vector<ControlPoint>& C)
-{
-    VectorXd mean_V = VectorXd::Zero(3);
-    VectorXd mean_newV = VectorXd::Zero(3);
-    for (int i = 0; i < V.rows(); i++) {
-        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
-
-        if (constraint.first)
-            continue;
-
-        mean_V += V.row(i);
-        mean_newV += new_V.row(i);
-    }
-    const int count = V.rows() - C.size();
-    mean_V /= count;
-    mean_newV /= count;
-
-
-
-    for (int i = 0; i < new_V.rows(); i++) {
-        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
-        if (!constraint.first) {
-            new_V.row(i) += mean_V - mean_newV;
-        }
-        else {
-            new_V.row(i) = constraint.second;
-        }
-    }
-}
-
 
 
 /* Apply arap algo for one iteration
@@ -326,32 +256,9 @@ void RecenterNewV(const MatrixXd& V, MatrixXd& new_V, const std::vector<ControlP
  * Out : Update V 
  */
 MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint>& C) {
-    // Center mesh and constraint points
-    /*MatrixXd V_centered = V.rowwise() - V.colwise().mean();
 
-    std::vector<ControlPoint> C_centered;
-    for (const ControlPoint& c : C) {
-        C_centered.push_back(ControlPoint(c.vertexIndexInMesh, c.wantedVertexPosition - V.colwise().mean()));
-    }
-
-    // Initialize updated matrix
-    MatrixXd new_V = V_centered;
-    for (const ControlPoint& c : C_centered) {
-        new_V.row(c.vertexIndexInMesh) = c.wantedVertexPosition;
-    }*/
-
-    // DEBUG
-    /*std::cout << "C = { ";
-    for (ControlPoint c : C) {
-        std::cout << c.vertexIndexInMesh << ": ";
-        std::cout << c.wantedVertexPosition << ", ";
-    }
-    std::cout << "}; \n";*/
-
-
-    MatrixXd V_centered = V;
-    std::vector<ControlPoint> C_centered = C;
-    MatrixXd new_V = V_centered;
+    MatrixXd previous_V = V;
+    MatrixXd new_V = V;
 
     // ITERATE
     for (int k = 0; k < 10; k++) {
@@ -359,15 +266,15 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
         // Find optimal Ri for each cell
         std::vector<MatrixXd> R(V.rows()); // Matrix of local rotations
         for (int i = 0; i < V.rows(); i++) {
-            MatrixXd Si = compute_covariance_matrix(V_centered, new_V, i);
+            MatrixXd Si = compute_covariance_matrix(previous_V, new_V, i);
 
             JacobiSVD<MatrixXd> svd(Si, ComputeThinU | ComputeThinV);
 
             DiagonalMatrix<double, 3> D(1, 1, (svd.matrixV() * svd.matrixU().transpose()).determinant());
             MatrixXd Ri = svd.matrixV() * D * svd.matrixU().transpose();
 
-            /* =====    More Direct Application of the Paper    =====
-            MatrixXd svdU = svd.matrixU();
+            // =====    Alternative for Ri determination    =====
+            /*MatrixXd svdU = svd.matrixU();
             MatrixXd svdV = svd.matrixV();
             MatrixXd Ri = svdV * svdU.transpose();    // Initial Guest
             int a;
@@ -385,9 +292,7 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
 
                 // recompute Ri
                 Ri = svdV * svdU.transpose();
-            }
-            */
-
+            }*/
 
             // Store Ri
             R[i] = Ri;
@@ -397,16 +302,11 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
             std::cout << Ri << std::endl;*/
         }
 
-
         // Find optimal p'
-        MatrixXd b = compute_b(V_centered, R, C_centered);
+        MatrixXd b = compute_b(previous_V, R, C);
 
-        V_centered = new_V;
+        previous_V = new_V;
         new_V = L.ldlt().solve(b);
-
-        std::cout << new_V << std::endl;
-
-        //RecenterNewV(V, new_V, C);
     }
 
     return new_V;

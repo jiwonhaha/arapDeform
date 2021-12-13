@@ -206,8 +206,8 @@ bool InterfaceManager::onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mes
         projectOnMoveDirection(viewer, projPoint);
 
         Eigen::RowVector3d mouseMovement = (lastProjectedPoint - projPoint).transpose();
-        if (mouseMovement.norm() > 0.2)
-            mouseMovement *= (0.2 / (mouseMovement.norm()));
+        /*if (mouseMovement.norm() > 0.2)
+            mouseMovement *= (0.2 / (mouseMovement.norm()));*/
         lastProjectedPoint = projPoint;    // lastProjectedPoint + mouseMovement.transpose(); //
 
         for (auto& cpp : getSelectedControlPoints(mesh))
