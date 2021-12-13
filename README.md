@@ -1,15 +1,57 @@
-# libigl example project
+# As-Rigid-As-Possible project
 
-A blank project example showing how to use libigl and cmake. Feel free and
-encouraged to copy or fork this project as a way of starting a new personal
-project using libigl.
+## Abstract
 
-## See the tutorial first
+The As-Rigid-As-Possible (or in short ARAP) is a way to deform meshes using control points that preserves as much as it can the intial shape of the mesh.
+This is achieved using an algorithm explained on [this paper](https://igl.ethz.ch/projects/ARAP/).
 
-Then build, run and understand the [libigl
-tutorial](http://libigl.github.io/libigl/tutorial/).
 
-## Dependencies
+## Interface
+
+Since we wanted to build an interaction version of the ARAP method, we had to implement an interface to go with it.
+We decided to go with a design where there are 2 functionnement  modes.<br>
+The first one is the selection mode, it allows to select points on the mesh and to add them or remove them from the mesh's control point list.<br>
+The second mode is the grab mode, where the user can move the selected control points and see the ARAP algorithm in action.<br>
+<br>
+Here are the different commands:
+
+```
+			---		Common 		---
+G,g				Toggle interface mode between Selection and Grabing
+
+			---	Selection Mode	---
+click			Set selection to clicked point
+click + shift	Add/Remove clicked point to selection, or set selection to none if no clicked point
+C,c				Add selected points to mesh's control points (Triggers ARAP)
+R,r				Remove selected points to mesh's control points (Triggers ARAP)
+
+			---	  Grab Mode		---
+drag			Move selected control points among set axis (Triggers ARAP)
+X,x				Set move axis to X
+Y,y				Set move axis to Y
+Z,z				Set move axis to Z (Key W,w on azerty keyboards)
+X,x + shift		Set move plane to (Y,Z)
+Y,y + shift		Set move plane to (X,Z)
+Z,z + shift		Set move plane to (X,Y) (Key W,w on azerty keyboards)
+```
+
+
+In the selection mode, a selected point will appear as red, a selected control point as light green, and a not selected control point as drak green.<br>
+In the grab mode, a selected point will appear as orange, a selected control point as a blueish light green, and a not selected control point as the same drak green.<br>
+If a control point isn't at its position defined by the user, an edge will link the user's wanted position for this control point and the actual position on the mesh of the control point.<br>
+<br>
+When grabing a control point, the move axis appears. The red one is the X axis, the green one is the Y one, and the blue one is the Z one.
+
+
+## Mesh
+
+By default, our programm will launch using a subdivided cube. However, one can starts the program with an optional argument.
+That argument will be the relative path to a external mesh file, saved in the .off format. The data folder contains several .off exmaple files that can be used.
+
+
+## Use the project
+
+### Dependencies
 
 The only dependencies are STL, Eigen, [libigl](http://libigl.github.io/libigl/) and the dependencies
 of the `igl::opengl::glfw::Viewer` (OpenGL, glad and GLFW).
@@ -26,21 +68,15 @@ cmake -DFETCHCONTENT_SOURCE_DIR_LIBIGL=<path-to-libigl> ..
 When changing this value, do not forget to clear your `CMakeCache.txt`, or to update the cache variable
 via `cmake-gui` or `ccmake`.
 
-## Compile
+### Compile
 
 Compile this project using the standard cmake routine:
 
+```
     mkdir build
     cd build
     cmake ..
     make
+```
 
-This should find and build the dependencies and create a `example_bin` binary.
-
-## Run
-
-From within the `build` directory just issue:
-
-    ./example
-
-A glfw app should launch displaying a 3D cube.
+This should find and build the dependencies and create the needed files, including the project .sln file.
