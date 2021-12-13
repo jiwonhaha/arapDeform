@@ -25,11 +25,11 @@ G,g				Toggle interface mode between Selection and Grabing
 			---	Selection Mode	---
 click			Set selection to clicked point
 click + shift	Add/Remove clicked point to selection, or set selection to none if no clicked point
-C,c				Add selected points to mesh's control points (Triggers ARAP)
-R,r				Remove selected points to mesh's control points (Triggers ARAP)
+C,c				Add selected points to mesh's control points
+R,r				Remove selected points to mesh's control points (Triggers ARAP with 'Laplacian' intialisation method)
 
 			---	  Grab Mode		---
-drag			Move selected control points among set axis (Triggers ARAP)
+drag			Move selected control points among set axis (Triggers ARAP if intialisation method is 'Last Frame')
 X,x				Set move axis to X
 Y,y				Set move axis to Y
 Z,z				Set move axis to Z (Key W,w on azerty keyboards)

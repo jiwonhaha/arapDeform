@@ -299,11 +299,11 @@ void InterfaceManager::displayKeyBindOnConsole()
     std::cout << "\t\t--- Selection Mode ---\n";
     std::cout << "  click   Set selection to clicked point\n";
     std::cout << "  click[shift]   Add/Remove clicked point to selection, or set selection to none if no clicked point\n";
-    std::cout << "  C,c     Add selected points to mesh's control points (Triggers ARAP)\n";
-    std::cout << "  R,r     Remove selected points to mesh's control points (Triggers ARAP)\n\n";
+    std::cout << "  C,c     Add selected points to mesh's control points\n";
+    std::cout << "  R,r     Remove selected points to mesh's control points (Triggers ARAP with 'Laplacian' intialisation method)\n\n";
 
     std::cout << "\t\t--- Grab Mode ---\n";
-    std::cout << "  [drag]  Move selected control points among set axis (Triggers ARAP)\n";
+    std::cout << "  [drag]  Move selected control points among set axis (Triggers ARAP if intialisation method is 'Last Frame')\n";
     std::cout << "  X,x     Set move axis to X\n";
     std::cout << "  Y,y     Set move axis to Y\n";
     std::cout << "  Z,z     Set move axis to Z (Key W,w on azerty keyboards)\n";
