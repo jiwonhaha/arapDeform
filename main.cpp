@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
             2, 6, 8,
             2, 8, 4).finished().array() - 1;
 
-        int subNb = 1;
+        int subNb = 0;
         for (int i = 0; i < subNb; i++) {
             MatrixXd V_sub(mesh.V.rows(), mesh.V.cols());
             MatrixXi F_sub(mesh.F.rows(), mesh.F.cols());
@@ -76,7 +76,6 @@ int main(int argc, char *argv[])
     std::vector<ControlPoint> C = mesh.getControlPoints();
     compute_laplacian_matrix(C);
 
-
     std::cout << "" << std::endl;
 
     // Setup the interface
@@ -86,7 +85,7 @@ int main(int argc, char *argv[])
     {
         if (needToPerformArap)
         {
-            mesh.V = arap(mesh.V, mesh.F, mesh.getControlPoints(), 100);
+            mesh.V = arap(mesh.V, mesh.F, mesh.getControlPoints(), 100, 0);
             viewer.data().set_mesh(mesh.V, mesh.F);
             needToPerformArap = false;
         }

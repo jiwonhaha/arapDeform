@@ -110,10 +110,7 @@ void compute_laplacian_matrix(const std::vector<ControlPoint>& C) {
 
     // Add diagonal value
     for (int i = 0; i < L.rows(); i++) {
-        // If it's not a constraint point
-        if (L(i, i) != 1) {
-            L(i, i) += -L.row(i).sum();
-        }
+        L(i, i) += -L.row(i).sum();
     }
 
     // Add constraints (Article)
@@ -127,6 +124,73 @@ void compute_laplacian_matrix(const std::vector<ControlPoint>& C) {
     // DEBUG
     /*std::cout << 'L' << std::endl;
     std::cout << L << std::endl;*/
+}
+
+MatrixXd laplacian_init(const MatrixXd& V, const std::vector<ControlPoint>& C) {
+    MatrixXd laplacian = -weights;
+
+    // Add diagonal value
+    for (int i = 0; i < laplacian.rows(); i++) {
+        laplacian(i, i) += -laplacian.row(i).sum();
+    }
+
+    // Build A and B
+    MatrixXd A = MatrixXd::Zero(V.rows(), V.rows() - C.size());
+    MatrixXd B = MatrixXd::Zero(V.rows(), C.size());
+
+    int a = 0;
+    int b = 0;
+    for (int i = 0; i < V.rows(); i++) {
+        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
+
+        if (constraint.first) {
+            B.col(b) = laplacian.col(i);
+            b++;
+        }
+        else {
+            A.col(a) = laplacian.col(i);
+            a++;
+        }
+    }
+
+    std::cout << "A" << std::endl;
+    std::cout << A << std::endl;
+    std::cout << "B" << std::endl;
+    std::cout << B << std::endl;
+
+    // Build A' * A
+    MatrixXd left = A.transpose() * A;
+
+    // Build A' * (-By + L * p)
+    MatrixXd y = MatrixXd::Zero(C.size(), V.cols());
+    for (int i = 0; i < C.size(); i++) {
+        y.row(i) = C[i].wantedVertexPosition;
+    }
+
+    std::cout << "y" << std::endl;
+    std::cout << y << std::endl;
+
+    MatrixXd right = A.transpose() * (-B * y + laplacian * V);
+
+    MatrixXd x = left.ldlt().solve(right);
+
+    MatrixXd new_V = MatrixXd::Zero(V.rows(), V.cols());
+    a = 0;
+    b = 0;
+    for (int i = 0; i < V.rows(); i++) {
+        std::pair<bool, Vector3d> constraint = isConstraint(C, i);
+
+        if (constraint.first) {
+            new_V.row(i) = y.row(b);
+            b++;
+        }
+        else {
+            new_V.row(i) = x.row(a);
+            a++;
+        }
+    }
+
+    return new_V;
 }
 
 MatrixXd compute_covariance_matrix(const MatrixXd& V, const MatrixXd& new_V, const int& index) {
@@ -283,16 +347,26 @@ float compute_energy(const MatrixXd& V, const MatrixXd& new_V, const std::vector
  *
  * Out : Update V 
  */
-MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint>& C, const int& kmax) {
+MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint>& C, const int& kmax, const int& init) {
 
     MatrixXd previous_V = V;
-    MatrixXd new_V = V;
+
+    MatrixXd new_V;
+    // User interaction
+    if (init == 0) {
+        new_V = V;
+    }
+    // Laplacian initialization
+    else if (init == 1) {
+        new_V = laplacian_init(V, C);
+    }
+    
 
     float old_energy = 0;
     float new_energy = 0;
 
     // ITERATE
-    int k = 1;
+    int k = 0;
     do {
 
         // Find optimal Ri for each cell
