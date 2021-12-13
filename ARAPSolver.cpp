@@ -8,6 +8,7 @@ MatrixXd weights;
 MatrixXd L;
 
 float eps = 1e-10;
+float tol = 1e-3;
 
 
 /* Find one-ring neighbors of all the vertices in V.
@@ -248,6 +249,33 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
     return b;
 }
 
+float compute_energy(const MatrixXd& V, const MatrixXd& new_V, const std::vector<MatrixXd>& R) {
+    float energy = 0;
+    for (int i = 0; i < V.rows(); i++) {
+        VectorXd vi = V.row(i);
+        VectorXd vi_prime = new_V.row(i);
+
+        // Retrieve neighbors of vi
+        std::list<int> neighbors_v = neighbors[i];
+
+        // Rotation matrix of i-th vertex
+        MatrixXd Ri = R[i];
+
+        for (std::list<int>::iterator it = neighbors_v.begin(); it != neighbors_v.end(); ++it) {
+
+            VectorXd neighbor = V.row(*it);
+            VectorXd neighbor_prime = new_V.row(*it);
+
+            // Weight of the edge
+            double wij = weights(i, *it);
+
+            energy += (float)wij * pow(((vi_prime - neighbor_prime) - Ri * (vi - neighbor)).norm(), 2);
+
+        }
+    }
+    return energy;
+}
+
 
 /* Apply arap algo for one iteration
  * V : Matrix of initial points (previous frame)
@@ -255,13 +283,17 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
  *
  * Out : Update V 
  */
-MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint>& C) {
+MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint>& C, const int& kmax) {
 
     MatrixXd previous_V = V;
     MatrixXd new_V = V;
 
+    float old_energy = 0;
+    float new_energy = 0;
+
     // ITERATE
-    for (int k = 0; k < 10; k++) {
+    int k = 1;
+    do {
 
         // Find optimal Ri for each cell
         std::vector<MatrixXd> R(V.rows()); // Matrix of local rotations
@@ -307,7 +339,12 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
 
         previous_V = new_V;
         new_V = L.ldlt().solve(b);
-    }
+
+        old_energy = new_energy;
+        new_energy = compute_energy(previous_V, new_V, R);
+
+        k++;
+    } while (k < kmax && abs(old_energy - new_energy) > tol);
 
     return new_V;
 }

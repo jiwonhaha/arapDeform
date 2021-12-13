@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
     {
         if (needToPerformArap)
         {
-            mesh.V = arap(mesh.V, mesh.F, mesh.getControlPoints());
+            mesh.V = arap(mesh.V, mesh.F, mesh.getControlPoints(), 100);
             viewer.data().set_mesh(mesh.V, mesh.F);
             needToPerformArap = false;
         }
