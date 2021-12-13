@@ -15,7 +15,7 @@ The second mode is the grab mode, where the user can move the selected control p
 
 Here are the different commands:
 
-			---		Common 		---
+`			---		Common 		---
 G,g				Toggle interface mode between Selection and Grabing
 
 			---	Selection Mode	---
@@ -31,7 +31,7 @@ Y,y				Set move axis to Y
 Z,z				Set move axis to Z (Key W,w on azerty keyboards)
 X,x + shift		Set move plane to (Y,Z)
 Y,y + shift		Set move plane to (X,Z)
-Z,z + shift		Set move plane to (X,Y) (Key W,w on azerty keyboards)
+Z,z + shift		Set move plane to (X,Y) (Key W,w on azerty keyboards)`
 
 
 In the selection mode, a selected point will appear as red, a selected control point as light green, and a not selected control point as drak green.
