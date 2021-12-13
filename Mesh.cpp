@@ -76,6 +76,11 @@ ControlPoint* Mesh::getControlPoint(int vertexIndex)
 	return nullptr;
 }
 
+int Mesh::getControlPointCount() const
+{
+	return controlPoints.size();
+}
+
 
 void Mesh::addControlPoint(int vertexIndex)
 {

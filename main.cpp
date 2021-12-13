@@ -8,6 +8,16 @@
 
 
 
+
+void performARAP(Mesh& mesh, const EInitialisationType& initialisationType, igl::opengl::glfw::Viewer& viewer, const InterfaceManager& interfaceManager)
+{
+    mesh.V = arap(mesh.V, mesh.F, mesh.getControlPoints(), 100, initialisationType);
+    interfaceManager.displaySelectedPoints(viewer, mesh);
+    viewer.data().set_mesh(mesh.V, mesh.F);
+}
+
+
+
 int main(int argc, char *argv[])
 {
     Mesh mesh = Mesh();
@@ -85,9 +95,7 @@ int main(int argc, char *argv[])
     {
         if (needToPerformArap)
         {
-            mesh.V = arap(mesh.V, mesh.F, mesh.getControlPoints(), 100, initialisationType);
-            interfaceManager.displaySelectedPoints(viewer, mesh);
-            viewer.data().set_mesh(mesh.V, mesh.F);
+            performARAP(mesh, initialisationType, viewer, interfaceManager);
             needToPerformArap = false;
         }
 
@@ -109,7 +117,11 @@ int main(int argc, char *argv[])
     };
     viewer.callback_key_down = [&interfaceManager, &mesh, &needToPerformArap, &initialisationType](igl::opengl::glfw::Viewer& viewer, unsigned char key, int modifier)->bool
     {
-        interfaceManager.onKeyPressed(viewer, mesh, key, modifier & 0x00000001, needToPerformArap, initialisationType);
+        bool removedCP = false;
+        interfaceManager.onKeyPressed(viewer, mesh, key, modifier & 0x00000001, needToPerformArap, initialisationType, removedCP);
+        if (removedCP)
+            performARAP(mesh, EInitialisationType::e_Laplace, viewer, interfaceManager);
+
         return false;
     };
     

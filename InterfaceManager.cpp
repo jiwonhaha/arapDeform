@@ -5,7 +5,7 @@
 #include <igl/point_mesh_squared_distance.h>
 
 
-std::vector<ControlPoint*> InterfaceManager::getSelectedControlPoints(Mesh& mesh)
+std::vector<ControlPoint*> InterfaceManager::getSelectedControlPoints(Mesh& mesh) const
 {
     std::vector<ControlPoint*> cp = mesh.getControlPointsW();
     std::vector<ControlPoint*> selection_cp = std::vector<ControlPoint*>();
@@ -19,7 +19,7 @@ std::vector<ControlPoint*> InterfaceManager::getSelectedControlPoints(Mesh& mesh
 
     return selection_cp;
 }
-std::vector<int> InterfaceManager::getSelectedControlPointsIndex(const Mesh& mesh, bool invert)
+std::vector<int> InterfaceManager::getSelectedControlPointsIndex(const Mesh& mesh, bool invert) const
 {
     std::vector<int> selection_cp = std::vector<int>();
     for (const auto& i : selection)
@@ -28,7 +28,7 @@ std::vector<int> InterfaceManager::getSelectedControlPointsIndex(const Mesh& mes
 
     return selection_cp;
 }
-std::vector<int> InterfaceManager::getNonSelectedControlPointsIndex(const Mesh& mesh)
+std::vector<int> InterfaceManager::getNonSelectedControlPointsIndex(const Mesh& mesh) const
 {
     std::vector<int> selection_cp = std::vector<int>();
     std::vector<int> all_cp = mesh.getControlPointsIndex();
@@ -48,7 +48,7 @@ std::vector<int> InterfaceManager::getNonSelectedControlPointsIndex(const Mesh& 
     return selection_cp;
 }
 
-void InterfaceManager::displaySelectedPoints(igl::opengl::glfw::Viewer& viewer, const Mesh& mesh)
+void InterfaceManager::displaySelectedPoints(igl::opengl::glfw::Viewer& viewer, const Mesh& mesh) const
 {
     // retrieve the control points not selected
     Eigen::MatrixXd cpNotSelected = mesh.getVerticesFromIndex(getNonSelectedControlPointsIndex(mesh));
@@ -117,7 +117,7 @@ void InterfaceManager::displaySelectedPoints(igl::opengl::glfw::Viewer& viewer, 
     }
 }
 
-void InterfaceManager::displayMoveAxis(igl::opengl::glfw::Viewer& viewer, const Eigen::Vector3d& axisVector, const Eigen::MatrixXd& cppSelected)
+void InterfaceManager::displayMoveAxis(igl::opengl::glfw::Viewer& viewer, const Eigen::Vector3d& axisVector, const Eigen::MatrixXd& cppSelected) const
 {
     const Eigen::RowVector3d axisTransposed = axisVector.transpose();
     Eigen::RowVector3d origin = Eigen::RowVector3d::Zero();
@@ -215,7 +215,7 @@ bool InterfaceManager::onMouseMoved(igl::opengl::glfw::Viewer& viewer, Mesh& mes
         return false;   // simply move the viewpoint    
 }
 
-void InterfaceManager::projectOnMoveDirection(igl::opengl::glfw::Viewer& viewer, Eigen::Vector3d& projectionReceiver)
+void InterfaceManager::projectOnMoveDirection(igl::opengl::glfw::Viewer& viewer, Eigen::Vector3d& projectionReceiver) const
 {
     double x = viewer.current_mouse_x;
     double y = viewer.current_mouse_y;
@@ -233,7 +233,7 @@ void InterfaceManager::projectOnMoveDirection(igl::opengl::glfw::Viewer& viewer,
     }
 }
 
-void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, unsigned char key, bool isShiftPressed, bool& needArap, EInitialisationType& initType)
+void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mesh, unsigned char key, bool isShiftPressed, bool& needArap, EInitialisationType& initType, bool& removedCP)
 {
     //std::cout << "pressed Key: " << key << " " << (unsigned int)key << std::endl;
     if (key == 'A')
@@ -264,9 +264,11 @@ void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mes
     }
     else if (key == 'R')
     {
+        int nbCP = mesh.getControlPointCount();
         for (const auto& i : selection)
             mesh.removeControlPoint(i);
         displaySelectedPoints(viewer, mesh);
+        removedCP = nbCP != mesh.getControlPointCount();    // the number of cp is different -> one has been removed
     }
     else if (key == 'X')
         setMoveDirection(Eigen::Vector3d(1, 0, 0), isShiftPressed, viewer, mesh);
