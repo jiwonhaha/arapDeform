@@ -15,9 +15,10 @@ int main(int argc, char *argv[])
 
     if (argc > 1)
     {
-        std::cout << "reading input file: " << argv[1] << std::endl;
+        std::cout << "Reading input file: " << argv[1] << std::endl;
         igl::readOFF(argv[1], mesh.V, mesh.F);
-        std::cout << "reading done." << std::endl;
+        std::cout << "Reading complete !" << std::endl;
+        std::cout << mesh.V.rows() << " vertices loaded." << std::endl;
     }
     else
     {
@@ -47,9 +48,8 @@ int main(int argc, char *argv[])
             2, 6, 8,
             2, 8, 4).finished().array() - 1;
 
-        //igl::readOFF("C:/Users/Lauriane/OneDrive/Documents/Cours/IGD/X-INF574/Project/ARAP/data/sphere2.off", mesh.V, mesh.F);
-
-        for (int i = 0; i < 1; i++) {
+        int subNb = 1;
+        for (int i = 0; i < subNb; i++) {
             MatrixXd V_sub(mesh.V.rows(), mesh.V.cols());
             MatrixXi F_sub(mesh.F.rows(), mesh.F.cols());
             igl::upsample(mesh.V, mesh.F, V_sub, F_sub);
@@ -59,6 +59,9 @@ int main(int argc, char *argv[])
         }
 
         mesh.V = mesh.V.rowwise() - mesh.V.colwise().mean();
+
+        std::cout << "Using default mesh: Cube subdivided " << subNb << " times." << std::endl;
+        std::cout << mesh.V.rows() << " vertices loaded." << std::endl;
     }
 
     bool needToPerformArap = false;
@@ -73,6 +76,8 @@ int main(int argc, char *argv[])
     std::vector<ControlPoint> C = mesh.getControlPoints();
     compute_laplacian_matrix(C);
 
+
+    std::cout << "" << std::endl;
 
     // Setup the interface
     igl::opengl::glfw::Viewer viewer;
@@ -107,6 +112,9 @@ int main(int argc, char *argv[])
         interfaceManager.onKeyPressed(viewer, mesh, key, modifier & 0x00000001, needToPerformArap);
         return false;
     };
+    
+    // Display Key binding for our interface
+    InterfaceManager::displayKeyBindOnConsole();
 
     // Plot the mesh
     viewer.data().set_mesh(mesh.V, mesh.F);

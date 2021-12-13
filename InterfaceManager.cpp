@@ -283,3 +283,25 @@ void InterfaceManager::setMoveDirection(const Eigen::Vector3d& direction, const 
     moveOnLine = !isShiftPressed;
     displaySelectedPoints(viewer, mesh);
 }
+
+
+void InterfaceManager::displayKeyBindOnConsole()
+{
+    std::cout << "\n\nAs-Rigid-As-Posible Interface usage:\n";
+    std::cout << "  G,g     Toggle interface mode between selection and Grabing\n\n";
+
+    std::cout << "\t\t--- Selection Mode ---\n";
+    std::cout << "  click   Set selection to clicked point\n";
+    std::cout << "  click[shift]   Add/Remove clicked point to selection, or set selection to none if no clicked point\n";
+    std::cout << "  C,c     Add selected points to mesh's control points (Triggers ARAP)\n";
+    std::cout << "  R,r     Remove selected points to mesh's control points (Triggers ARAP)\n\n";
+
+    std::cout << "\t\t--- Grab Mode ---\n";
+    std::cout << "  [drag]  Move selected control points among set axis (Triggers ARAP)\n";
+    std::cout << "  X,x     Set move axis to X\n";
+    std::cout << "  Y,y     Set move axis to Y\n";
+    std::cout << "  Z,z     Set move axis to Z (Key W,w on azerty keyboards)\n";
+    std::cout << "  X,x[shift]     Set move plane to (Y,Z)\n";
+    std::cout << "  Y,y[shift]     Set move plane to (X,Z)\n";
+    std::cout << "  Z,z[shift]     Set move plane to (X,Y) (Key W,w on azerty keyboards)\n\n" << std::endl;
+}
