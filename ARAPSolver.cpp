@@ -3,131 +3,19 @@
 
 // /!\ Ne prend pas en compte les boundaries !!!
 
-std::vector<std::list<int>> neighbors;
-MatrixXd weights;
-MatrixXd L;
 
 float eps = 1e-10;
-float tol = 1e-3;
+#define tol 1e-3
 
 
-/* Find one-ring neighbors of all the vertices in V.
- * V : Matrix of vertices
- * F : Matrix of faces
- *
- * Out : Vector of list of neigbors indices
- */
-void find_neighbors(const MatrixXd& V, const MatrixXi& F) {
-    std::vector<std::list<int>> myNeighbors(V.rows());
-
-    for (int i = 0; i < F.rows(); i++) {
-        for (int j = 0; j < F.cols(); j++) {
-            myNeighbors[F(i, j)].push_back(F(i, (j + 1) % F.cols()));
-            myNeighbors[F(i, j)].push_back(F(i, (j + 2) % F.cols()));
-        }
-    }
-
-    for (int i = 0; i < V.rows(); i++) {
-        myNeighbors[i].sort();
-        myNeighbors[i].unique();
-    }
-
-    neighbors = myNeighbors;
-
-    // DEBUG
-    // Print out the vector 
-    /*std::cout << "neighbors = { ";
-    for (std::list<int> neighbor : neighbors) {
-        std::cout << "{ ";
-        for (int n : neighbor) {
-            std::cout << n << ", ";
-        }
-        std::cout << "}; \n";
-    }
-    std::cout << "}; \n";*/
-}
-
-/* Compute weights wij
- * V : Matrix of vertices
- * F : Matrix of faces
- *
- * Out : Weights wij = 1/2 * (cot(aij) + cot(bij))
- */
-void compute_edges_weight(const MatrixXd& V, const MatrixXi& F) {
-    weights = MatrixXd::Zero(V.rows(), V.rows());
 
 
-    for (int i = 0; i < F.rows(); i++) {
-        // Compute edges vectors CCW
-        Vector3d v1 = V.row(F(i, 1)) - V.row(F(i, 0));
-        Vector3d v2 = V.row(F(i, 2)) - V.row(F(i, 1));
-        Vector3d v3 = V.row(F(i, 0)) - V.row(F(i, 2));
+MatrixXd laplacian_init(const Mesh& mesh) {
+    #define V mesh.V
+    #define W mesh.W
+    const std::vector<ControlPoint>& C = mesh.getControlPoints();
 
-        // Compute the angles
-        double a201 = acos(v1.dot(-v3) / (v1.norm() * v3.norm()));
-        double a012 = acos(-v1.dot(v2) / (v1.norm() * v2.norm()));
-        double a120 = acos(-v2.dot(v3) / (v2.norm() * v3.norm())); 
-
-        
-        // DEBUG
-        /*std::cout << "a120" << std::endl;
-        std::cout << a120 * 180 / 3.14 << std::endl;
-        std::cout << "a201" << std::endl;
-        std::cout << a201 * 180 / 3.14 << std::endl;
-        std::cout << "a012" << std::endl;
-        std::cout << a012 * 180 / 3.14 << std::endl;*/
-
-        // Add the angles
-        weights(F(i, 0), F(i, 1)) += cos(a120) / sin(a120);
-        weights(F(i, 1), F(i, 0)) += cos(a120) / sin(a120);
-
-        weights(F(i, 1), F(i, 2)) += cos(a201) / sin(a201);
-        weights(F(i, 2), F(i, 1)) += cos(a201) / sin(a201);
-
-        weights(F(i, 2), F(i, 0)) += cos(a012) / sin(a012);
-        weights(F(i, 0), F(i, 2)) += cos(a012) / sin(a012);
-    }
-
-    // Divide all the weights by 2
-    weights = (float) 1 / 2 * weights;
-
-    // Put small values to 0
-    for (int i = 0; i < weights.rows(); i++) {
-        for (int j = 0; j < weights.cols(); j++) {
-            if (weights(i, j) < eps) {
-                weights(i, j) = 0;
-            }
-        }
-    }
-
-    // DEBUG
-    /*std::cout << "weights" << std::endl;
-    std::cout << weights << std::endl;*/
-}
-
-void compute_laplacian_matrix(const std::vector<ControlPoint>& C) {
-    L = -weights;
-
-    // Add diagonal value
-    for (int i = 0; i < L.rows(); i++) {
-        L(i, i) += -L.row(i).sum();
-    }
-
-    // Add constraints (Article)
-    for (const ControlPoint& c : C) {
-        int index = c.vertexIndexInMesh;
-        L.row(index) = VectorXd::Zero(L.cols());
-        L.col(index) = VectorXd::Zero(L.rows());
-        L(index, index) = 1;
-    }
-
-    // DEBUG
-    /*std::cout << 'L' << std::endl;
-    std::cout << L << std::endl;*/
-}
-
-MatrixXd laplacian_init(const MatrixXd& V, const std::vector<ControlPoint>& C) {
-    MatrixXd laplacian = -weights;
+    MatrixXd laplacian = -W;
 
     // Add diagonal value
     for (int i = 0; i < laplacian.rows(); i++) {
@@ -184,20 +72,15 @@ MatrixXd laplacian_init(const MatrixXd& V, const std::vector<ControlPoint>& C) {
     }
 
     return new_V;
+    #undef V
+    #undef W
 }
 
-MatrixXd compute_covariance_matrix(const MatrixXd& V, const MatrixXd& new_V, const int& index) {
+MatrixXd compute_covariance_matrix(const Eigen::MatrixXd& W, const std::vector<std::list<int>>& N, const MatrixXd& V, const MatrixXd& new_V, const int& index) {
     MatrixXd Si(V.cols(), V.cols());
 
     // Retrieve neighbors of v
-    std::list<int> neighbors_v = neighbors[index];   
-
-    // DEBUG
-    /*std::cout << "neighbors = { ";
-    for (int n : neighbors_v) {
-            std::cout << n << ", ";
-    }
-    std::cout << "}; \n";*/
+    std::list<int> neighbors_v = N[index];
 
     MatrixXd P_init = MatrixXd::Zero(V.cols(), neighbors_v.size());
     MatrixXd P_new = MatrixXd::Zero(V.cols(), neighbors_v.size());
@@ -215,38 +98,17 @@ MatrixXd compute_covariance_matrix(const MatrixXd& V, const MatrixXd& new_V, con
         Vector3d edge_init = v_init - neighbor_init;
         P_init.col(k) = edge_init;
 
-        /*std::cout << "edge_init" << std::endl;
-        std::cout << edge_init << std::endl;*/
-
         // Updated mesh
         Vector3d neighbor_new = new_V.row(*it);
         Vector3d edge_new = v_new - neighbor_new;
         P_new.col(k) = edge_new;
 
-        /*std::cout << "edge_new" << std::endl;
-        std::cout << edge_new << std::endl;*/
 
         // Diagonal mesh
-        D.diagonal()[k] = weights(index, *it);
-    }
-
-    
+        D.diagonal()[k] = W(index, *it);
+    }    
 
     Si = P_init * D * P_new.transpose();
-
-    // DEBUG
-    /*std::cout << "D" << std::endl;
-    std::cout << D.diagonal() << std::endl;*/
-
-    /*std::cout << "P_init" << std::endl;
-    std::cout << P_init << std::endl;
-
-    std::cout << "P_new" << std::endl;
-    std::cout << P_new << std::endl;
-
-    std::cout << "Si" << std::endl;
-    std::cout << Si << std::endl;*/
-
     return Si;
 }
 
@@ -260,7 +122,7 @@ std::pair<bool, Vector3d> isConstraint(const std::vector<ControlPoint>& C, int i
     return std::pair<bool, Vector3d>(false, Vector3d(0,0,0));
 }
 
-MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std::vector<ControlPoint>& C) {
+MatrixXd compute_b(const Eigen::MatrixXd& W, const std::vector<std::list<int>>& N, const MatrixXd& V, const std::vector<MatrixXd>& R, const std::vector<ControlPoint>& C) {
 
     MatrixXd b = MatrixXd::Zero(V.rows(), V.cols());
 
@@ -268,7 +130,7 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
         VectorXd vi = V.row(i);
 
         // Retrieve neighbors of v
-        std::list<int> neighbors_v = neighbors[i];
+        std::list<int> neighbors_v = N[i];
 
         // Rotation matrix of i-th vertex
         MatrixXd Ri = R[i];
@@ -288,11 +150,11 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
                 VectorXd neighbor = V.row(*it);
                 
                 if (constraint_n.first) {
-                    b.row(i) += (double)weights(i, *it) * constraint_n.second;
+                    b.row(i) += (double)W(i, *it) * constraint_n.second;
                 }
 
                 // Weight of the edge
-                double wij = weights(i, *it);
+                double wij = W(i, *it);
 
                 // Neighbor Rotation matrix
                 MatrixXd Rj = R[*it];
@@ -306,14 +168,14 @@ MatrixXd compute_b(const MatrixXd& V, const std::vector<MatrixXd>& R, const std:
     return b;
 }
 
-float compute_energy(const MatrixXd& V, const MatrixXd& new_V, const std::vector<MatrixXd>& R) {
+float compute_energy(const Eigen::MatrixXd& W, const std::vector<std::list<int>>& N, const MatrixXd& V, const MatrixXd& new_V, const std::vector<MatrixXd>& R) {
     float energy = 0;
     for (int i = 0; i < V.rows(); i++) {
         VectorXd vi = V.row(i);
         VectorXd vi_prime = new_V.row(i);
 
         // Retrieve neighbors of vi
-        std::list<int> neighbors_v = neighbors[i];
+        std::list<int> neighbors_v = N[i];
 
         // Rotation matrix of i-th vertex
         MatrixXd Ri = R[i];
@@ -324,7 +186,7 @@ float compute_energy(const MatrixXd& V, const MatrixXd& new_V, const std::vector
             VectorXd neighbor_prime = new_V.row(*it);
 
             // Weight of the edge
-            double wij = weights(i, *it);
+            double wij = W(i, *it);
 
             energy += (float)wij * pow(((vi_prime - neighbor_prime) - Ri * (vi - neighbor)).norm(), 2);
 
@@ -340,11 +202,18 @@ float compute_energy(const MatrixXd& V, const MatrixXd& new_V, const std::vector
  *
  * Out : Update V 
  */
-MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoint>& C, const int& kmax, const EInitialisationType& init) {
+MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init)
+{
+    #define V mesh.V
+    #define N mesh.N
+    #define W mesh.W
+    const std::vector<ControlPoint>&  C = mesh.getControlPoints();
+    MatrixXd L = mesh.getL_withCP();
 
     MatrixXd previous_V = V;
 
-   
+    // Make an intial guess of new_V according to the initialisation type choosen:
+    MatrixXd new_V;
     // User interaction
     if (init == EInitialisationType::e_LastFrame) {
         previous_V = V;
@@ -352,7 +221,7 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
     }
     // Laplacian initialization
     else if (init == EInitialisationType::e_Laplace) {
-        previous_V = laplacian_init(V, C);
+        new_V = laplacian_init(mesh);
         std::cout << "Initiated with laplacian" << std::endl;
     }
     
@@ -368,7 +237,7 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
         // Find optimal Ri for each cell
         std::vector<MatrixXd> R(V.rows()); // Matrix of local rotations
         for (int i = 0; i < V.rows(); i++) {
-            MatrixXd Si = compute_covariance_matrix(previous_V, new_V, i);
+            MatrixXd Si = compute_covariance_matrix(W, N, previous_V, new_V, i);
 
             JacobiSVD<MatrixXd> svd(Si, ComputeThinU | ComputeThinV);
 
@@ -405,13 +274,13 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
         }
 
         // Find optimal p'
-        MatrixXd b = compute_b(previous_V, R, C);
+        MatrixXd b = compute_b(W, N, previous_V, R, C);
 
         previous_V = new_V;
         new_V = L.ldlt().solve(b);
 
         old_energy = new_energy;
-        new_energy = compute_energy(previous_V, new_V, R);
+        new_energy = compute_energy(W, N, previous_V, new_V, R);
 
         k++;
     } while (k < kmax && abs(old_energy - new_energy) > tol);
@@ -419,4 +288,7 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
     std::cout << k << std::endl;*/
 
     return new_V;
+    #undef V
+    #undef N
+    #undef W
 }

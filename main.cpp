@@ -8,6 +8,16 @@
 
 
 
+
+void performARAP(Mesh& mesh, const EInitialisationType& initialisationType, igl::opengl::glfw::Viewer& viewer, const InterfaceManager& interfaceManager)
+{
+    mesh.V = arap(mesh, 100, initialisationType);
+    interfaceManager.displaySelectedPoints(viewer, mesh);
+    viewer.data().set_mesh(mesh.V, mesh.F);
+}
+
+
+
 int main(int argc, char *argv[])
 {
     Mesh mesh = Mesh();
@@ -66,7 +76,7 @@ int main(int argc, char *argv[])
     EInitialisationType initialisationType = EInitialisationType::e_LastFrame;
    
 
-    // Find one-ring neighbors
+    /*// Find one-ring neighbors
     find_neighbors(mesh.V, mesh.F);  
 
     // Compute weights
@@ -74,7 +84,9 @@ int main(int argc, char *argv[])
 
     // Precompute Laplacian-Beltrami matrix
     std::vector<ControlPoint> C = mesh.getControlPoints();
-    compute_laplacian_matrix(C);
+    compute_laplacian_matrix(C);*/
+
+    mesh.computeL_W_N();
 
 
     // Setup the interface
@@ -85,9 +97,7 @@ int main(int argc, char *argv[])
     {
         if (needToPerformArap)
         {
-            mesh.V = arap(mesh.V, mesh.F, mesh.getControlPoints(), 100, initialisationType);
-            interfaceManager.displaySelectedPoints(viewer, mesh);
-            viewer.data().set_mesh(mesh.V, mesh.F);
+            performARAP(mesh, initialisationType, viewer, interfaceManager);
             needToPerformArap = false;
         }
 
@@ -109,7 +119,11 @@ int main(int argc, char *argv[])
     };
     viewer.callback_key_down = [&interfaceManager, &mesh, &needToPerformArap, &initialisationType](igl::opengl::glfw::Viewer& viewer, unsigned char key, int modifier)->bool
     {
-        interfaceManager.onKeyPressed(viewer, mesh, key, modifier & 0x00000001, needToPerformArap, initialisationType);
+        bool removedCP = false;
+        interfaceManager.onKeyPressed(viewer, mesh, key, modifier & 0x00000001, needToPerformArap, initialisationType, removedCP);
+        if (removedCP)
+            performARAP(mesh, EInitialisationType::e_Laplace, viewer, interfaceManager);
+
         return false;
     };
     
