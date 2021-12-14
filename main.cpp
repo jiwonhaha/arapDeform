@@ -49,6 +49,11 @@ int main(int argc, char* argv[])
         { 7 },
         { Eigen::RowVector3d(0.1,0.1,0.1) }
     );
+    TestParam test5 = TestParam(5,
+        { 0 },
+        { 7 },
+        { Eigen::RowVector3d(0.1,0.1,0.1) }
+    );
 
     // Large displacement to study speed convergence and the number of iterations
     TestParam test6 = TestParam(0,
@@ -72,6 +77,11 @@ int main(int argc, char* argv[])
         { Eigen::RowVector3d(1.0,0.,0.) }
     );
     TestParam test10 = TestParam(4,
+        { 0 },
+        { 7 },
+        { Eigen::RowVector3d(1.0,0.,0.) }
+    );
+    TestParam test11 = TestParam(5,
         { 0 },
         { 7 },
         { Eigen::RowVector3d(1.0,0.,0.) }
@@ -100,7 +110,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        // No external mesh inputed : use default subdivided cube
+        // No external mesh input : use default subdivided cube
 
         // Inline mesh of a cube
         mesh.V = (Eigen::MatrixXd(8, 3) <<
@@ -126,7 +136,7 @@ int main(int argc, char *argv[])
             2, 6, 8,
             2, 8, 4).finished().array() - 1;
 
-        int subNb = 1;
+        int subNb = 3;
         for (int i = 0; i < subNb; i++) {
             MatrixXd V_sub(mesh.V.rows(), mesh.V.cols());
             MatrixXi F_sub(mesh.F.rows(), mesh.F.cols());
@@ -148,7 +158,7 @@ int main(int argc, char *argv[])
     EInitialisationType initialisationType = EInitialisationType::e_LastFrame;
    
 
-
+    // Initialize neighbors, weights and Laplace-Beltrami matrix
     mesh.computeL_W_N();
     const Eigen::MatrixXd V_save = mesh.V;
 
