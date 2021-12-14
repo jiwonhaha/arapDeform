@@ -5,8 +5,9 @@
 #include "ARAPSolver.h"
 #include "Mesh.h"
 #include "InterfaceManager.h"
+#include "TestARAP.h"
 
-
+#define TEST
 
 
 void performARAP(Mesh& mesh, const EInitialisationType& initialisationType, igl::opengl::glfw::Viewer& viewer, const InterfaceManager& interfaceManager)
@@ -16,6 +17,19 @@ void performARAP(Mesh& mesh, const EInitialisationType& initialisationType, igl:
     viewer.data().set_mesh(mesh.V, mesh.F);
 }
 
+
+#ifdef  TEST
+
+int main(int argc, char* argv[])
+{
+    TestParam test1 = TestParam(1,
+        { 0 },
+        { 1 },
+        { Eigen::RowVector3d(0.1,0,0)}
+    );
+}
+
+#else
 
 
 int main(int argc, char *argv[])
@@ -137,3 +151,5 @@ int main(int argc, char *argv[])
     viewer.data().set_face_based(true);
     viewer.launch();
 }
+
+#endif //  TEST

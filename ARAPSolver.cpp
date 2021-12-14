@@ -204,7 +204,7 @@ float compute_energy(const Eigen::MatrixXd& W, const std::vector<std::list<int>>
  *
  * Out : Update V 
  */
-MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init)
+MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init, int* outInterationNumber)
 {
     #define V mesh.V
     #define N mesh.N
@@ -287,7 +287,8 @@ MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init
         k++;
     } while (k < kmax && abs(old_energy - new_energy) > tol);
 
-    std::cout << k << std::endl;
+    //std::cout << k << std::endl;
+    *outInterationNumber = k;
 
     return new_V;
     #undef V
