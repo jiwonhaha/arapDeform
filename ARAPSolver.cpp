@@ -3,8 +3,6 @@
 
 // /!\ Ne prend pas en compte les boundaries !!!
 
-
-float eps = 1e-10;
 #define tol 1e-3
 
 
@@ -211,12 +209,12 @@ MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init
     // User interaction
     if (init == EInitialisationType::e_LastFrame) {
         new_V = V;
-        std::cout << "Initiated with last frame" << std::endl;
+        //std::cout << "Initiated with last frame" << std::endl;
     }
     // Laplacian initialization
     else if (init == EInitialisationType::e_Laplace) {
         new_V = laplacian_init(mesh);
-        std::cout << "Initiated with laplacian" << std::endl;
+        //std::cout << "Initiated with laplacian" << std::endl;
     }
     
     //MatrixXd new_V = previous_V;

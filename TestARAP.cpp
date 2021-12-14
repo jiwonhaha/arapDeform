@@ -2,6 +2,7 @@
 
 #include <igl/readOFF.h>
 #include <igl/upsample.h>
+#include <chrono>
 #include "ARAPSolver.h"
 
 
@@ -80,8 +81,15 @@ void TestParam::ExecuteTest()
         mesh.addControlPoint(i, mesh.V.row(i) + movedCPoffset[j]);
     }
 
+    auto start = std::chrono::steady_clock::now();
     arap(mesh, 100, EInitialisationType::e_LastFrame, res_iteration);
+    auto pause = std::chrono::steady_clock::now();
     arap(mesh, 100, EInitialisationType::e_Laplace, res_iteration+1);
+    auto end = std::chrono::steady_clock::now();
 
-    std::cout << "Iteration: " << res_iteration[0] << " | " << res_iteration[1] << std::endl;
+    res_time[0] = std::chrono::duration_cast<std::chrono::nanoseconds>(pause - start).count();
+    res_time[1] = std::chrono::duration_cast<std::chrono::nanoseconds>(end - pause).count();
+
+    std::cout << "Iteration: \t" << res_iteration[0] << "\t | " << res_iteration[1] << std::endl;
+    std::cout << "Time: \t" << res_time[0] << "ns\t | " << res_time[1] << "ns" << std::endl;
 }
