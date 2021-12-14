@@ -22,9 +22,10 @@ MatrixXd laplacian_init(const Mesh& mesh) {
         laplacian(i, i) += -laplacian.row(i).sum();
     }
 
-    // Build A and B
+    // Build A, B and y
     MatrixXd A = MatrixXd::Zero(V.rows(), V.rows() - C.size());
     MatrixXd B = MatrixXd::Zero(V.rows(), C.size());
+    MatrixXd y = MatrixXd::Zero(C.size(), V.cols());
 
     int a = 0;
     int b = 0;
@@ -33,6 +34,7 @@ MatrixXd laplacian_init(const Mesh& mesh) {
 
         if (constraint.first) {
             B.col(b) = laplacian.col(i);
+            y.row(b) = constraint.second;
             b++;
         }
         else {
@@ -45,31 +47,31 @@ MatrixXd laplacian_init(const Mesh& mesh) {
     MatrixXd left = A.transpose() * A;
 
     // Build A' * (-By + L * p)
-    MatrixXd y = MatrixXd::Zero(C.size(), V.cols());
-    for (int i = 0; i < C.size(); i++) {
-        y.row(i) = C[i].wantedVertexPosition;
-    }
-
-
     MatrixXd right = A.transpose() * (-B * y + laplacian * V);
 
     MatrixXd x = left.ldlt().solve(right);
 
     MatrixXd new_V = MatrixXd::Zero(V.rows(), V.cols());
     a = 0;
-    b = 0;
     for (int i = 0; i < V.rows(); i++) {
         std::pair<bool, Vector3d> constraint = isConstraint(C, i);
 
         if (constraint.first) {
-            new_V.row(i) = y.row(b);
-            b++;
+            new_V.row(i) = constraint.second;
         }
         else {
             new_V.row(i) = x.row(a);
             a++;
         }
     }
+
+    std::cout << "{";
+    for (const ControlPoint& c : C) {
+        std::cout << c.vertexIndexInMesh << ": " << c.wantedVertexPosition << std::endl;
+    }
+    std::cout << "}" << std::endl;
+
+    std::cout << new_V << std::endl;
 
     return new_V;
     #undef V
@@ -216,7 +218,7 @@ MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init
     MatrixXd new_V;
     // User interaction
     if (init == EInitialisationType::e_LastFrame) {
-        previous_V = V;
+        new_V = V;
         std::cout << "Initiated with last frame" << std::endl;
     }
     // Laplacian initialization
@@ -225,9 +227,9 @@ MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init
         std::cout << "Initiated with laplacian" << std::endl;
     }
     
-    MatrixXd new_V = previous_V;
+    //MatrixXd new_V = previous_V;
 
-    /*float old_energy = 0;
+    float old_energy = 0;
     float new_energy = 0;
 
     // ITERATE
@@ -263,14 +265,14 @@ MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init
 
                 // recompute Ri
                 Ri = svdV * svdU.transpose();
-            }
+            }*/
 
             // Store Ri
             R[i] = Ri;
 
             // DEBUG
             /*std::cout << "Ri" << std::endl;
-            std::cout << Ri << std::endl;
+            std::cout << Ri << std::endl;*/
         }
 
         // Find optimal p'
@@ -285,7 +287,7 @@ MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init
         k++;
     } while (k < kmax && abs(old_energy - new_energy) > tol);
 
-    std::cout << k << std::endl;*/
+    std::cout << k << std::endl;
 
     return new_V;
     #undef V

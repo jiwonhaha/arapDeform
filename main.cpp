@@ -66,10 +66,12 @@ int main(int argc, char *argv[])
             mesh.F = F_sub;
         }
 
-        mesh.V = mesh.V.rowwise() - mesh.V.colwise().mean();
-
         std::cout << "Using default mesh: Cube subdivided " << subNb << " times." << std::endl;
     }
+
+    // Center the mesh
+    mesh.V = mesh.V.rowwise() - mesh.V.colwise().mean();
+
     std::cout << mesh.V.rows() << " vertices loaded." << std::endl;
 
     bool needToPerformArap = false;
