@@ -153,11 +153,6 @@ MatrixXd laplacian_init(const MatrixXd& V, const std::vector<ControlPoint>& C) {
         }
     }
 
-    std::cout << "A" << std::endl;
-    std::cout << A << std::endl;
-    std::cout << "B" << std::endl;
-    std::cout << B << std::endl;
-
     // Build A' * A
     MatrixXd left = A.transpose() * A;
 
@@ -167,8 +162,6 @@ MatrixXd laplacian_init(const MatrixXd& V, const std::vector<ControlPoint>& C) {
         y.row(i) = C[i].wantedVertexPosition;
     }
 
-    std::cout << "y" << std::endl;
-    std::cout << y << std::endl;
 
     MatrixXd right = A.transpose() * (-B * y + laplacian * V);
 
@@ -351,20 +344,21 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
 
     MatrixXd previous_V = V;
 
-    MatrixXd new_V;
+   
     // User interaction
     if (init == EInitialisationType::e_LastFrame) {
-        new_V = V;
+        previous_V = V;
         std::cout << "Initiated with last frame" << std::endl;
     }
     // Laplacian initialization
     else if (init == EInitialisationType::e_Laplace) {
-        new_V = laplacian_init(V, C);
+        previous_V = laplacian_init(V, C);
         std::cout << "Initiated with laplacian" << std::endl;
     }
     
+    MatrixXd new_V = previous_V;
 
-    float old_energy = 0;
+    /*float old_energy = 0;
     float new_energy = 0;
 
     // ITERATE
@@ -400,14 +394,14 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
 
                 // recompute Ri
                 Ri = svdV * svdU.transpose();
-            }*/
+            }
 
             // Store Ri
             R[i] = Ri;
 
             // DEBUG
             /*std::cout << "Ri" << std::endl;
-            std::cout << Ri << std::endl;*/
+            std::cout << Ri << std::endl;
         }
 
         // Find optimal p'
@@ -421,6 +415,8 @@ MatrixXd arap(const MatrixXd &V, const MatrixXi &F, const std::vector<ControlPoi
 
         k++;
     } while (k < kmax && abs(old_energy - new_energy) > tol);
+
+    std::cout << k << std::endl;*/
 
     return new_V;
 }
