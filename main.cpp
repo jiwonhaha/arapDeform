@@ -27,6 +27,11 @@ int main(int argc, char* argv[])
         { 1 },
         { Eigen::RowVector3d(0.1,0,0)}
     );
+    TestParam test2 = TestParam("../data/cactus_small.off",
+        { 0 },
+        { 1 },
+        { Eigen::RowVector3d(0.1,0,0) }
+    );
 }
 
 #else

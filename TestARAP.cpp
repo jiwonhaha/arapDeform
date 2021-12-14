@@ -12,8 +12,9 @@ TestParam::TestParam(std::vector<int> _fixedCPindex, std::vector<int> _movedCPin
     movedCPindex(_movedCPindex),
     movedCPoffset(_movedCPoffset)
 {
-    static int i = 0;
-    std::cout << "===== Test n " << i << ": =====" << std::endl;
+    static int testIndex = 0;
+    testIndex++;
+    std::cout << "===== Test n " << testIndex << ": =====" << std::endl;
 };
 
 TestParam::TestParam(int cubeSubdivision, std::vector<int> _fixedCPindex, std::vector<int> _movedCPindex, std::vector<Eigen::RowVector3d> _movedCPoffset) :
@@ -82,14 +83,16 @@ void TestParam::ExecuteTest()
     }
 
     auto start = std::chrono::steady_clock::now();
-    arap(mesh, 100, EInitialisationType::e_LastFrame, res_iteration);
+    arap(mesh, 100, EInitialisationType::e_LastFrame, res_iteration, res_initEnergy, res_finalEnergy);
     auto pause = std::chrono::steady_clock::now();
-    arap(mesh, 100, EInitialisationType::e_Laplace, res_iteration+1);
+    arap(mesh, 100, EInitialisationType::e_Laplace, res_iteration+1, res_initEnergy+1, res_finalEnergy+1);
     auto end = std::chrono::steady_clock::now();
 
     res_time[0] = std::chrono::duration_cast<std::chrono::nanoseconds>(pause - start).count();
     res_time[1] = std::chrono::duration_cast<std::chrono::nanoseconds>(end - pause).count();
 
-    std::cout << "Iteration: \t" << res_iteration[0] << "\t | " << res_iteration[1] << std::endl;
-    std::cout << "Time: \t" << res_time[0] << "ns\t | " << res_time[1] << "ns" << std::endl;
+    std::cout << "Iteration (kf): \t" << res_iteration[0] << "\t | " << res_iteration[1] << std::endl;
+    std::cout << "Time: \t\t" << res_time[0] << "ns\t | " << res_time[1] << "ns" << std::endl;
+    std::cout << "Energy(1): \t" << res_initEnergy[0] << "\t | " << res_initEnergy[1] << std::endl;
+    std::cout << "Energy(kf): \t" << res_finalEnergy[0] << "\t | " << res_finalEnergy[1] << std::endl;
 }
