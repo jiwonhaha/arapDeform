@@ -7,7 +7,7 @@
 #include "InterfaceManager.h"
 #include "TestARAP.h"
 
-#define TEST
+//#define TEST
 
 
 void performARAP(Mesh& mesh, const EInitialisationType& initialisationType, igl::opengl::glfw::Viewer& viewer, const InterfaceManager& interfaceManager)
@@ -22,16 +22,67 @@ void performARAP(Mesh& mesh, const EInitialisationType& initialisationType, igl:
 
 int main(int argc, char* argv[])
 {
+    // Test on the subdivide mesh
+    // Small displacement to compare between inits
+    TestParam test0 = TestParam(0,
+        { 0 },
+        { 7 },
+        { Eigen::RowVector3d(0.1,0.1,0.1)}
+    );
     TestParam test1 = TestParam(1,
         { 0 },
-        { 1 },
-        { Eigen::RowVector3d(0.1,0,0)}
+        { 7 },
+        { Eigen::RowVector3d(0.1,0.1,0.1) }
     );
-    TestParam test2 = TestParam("../data/cactus_small.off",
+    TestParam test2 = TestParam(2,
+        { 0 },
+        { 7 },
+        { Eigen::RowVector3d(0.1,0.1,0.1) }
+    );
+    TestParam test3 = TestParam(3,
+        { 0 },
+        { 7 },
+        { Eigen::RowVector3d(0.1,0.1,0.1) }
+    );
+    TestParam test4 = TestParam(4,
+        { 0 },
+        { 7 },
+        { Eigen::RowVector3d(0.1,0.1,0.1) }
+    );
+
+    // Large displacement to study speed convergence and the number of iterations
+    TestParam test6 = TestParam(0,
+        { 0 },
+        { 7 },
+        { Eigen::RowVector3d(1.0,0.,0.) }
+    );
+    TestParam test7 = TestParam(1,
+        { 0 },
+        { 7 },
+        { Eigen::RowVector3d(1.0,0.,0.) }
+    );
+    TestParam test8 = TestParam(2,
+        { 0 },
+        { 7 },
+        { Eigen::RowVector3d(1.0,0.,0.) }
+    );
+    TestParam test9 = TestParam(3,
+        { 0 },
+        { 7 },
+        { Eigen::RowVector3d(1.0,0.,0.) }
+    );
+    TestParam test10 = TestParam(4,
+        { 0 },
+        { 7 },
+        { Eigen::RowVector3d(1.0,0.,0.) }
+    );
+
+    // Test on complex mesh
+    /*TestParam test2 = TestParam("../data/cactus_small.off",
         { 0 },
         { 1 },
         { Eigen::RowVector3d(0.1,0,0) }
-    );
+    );*/
 }
 
 #else
@@ -75,7 +126,7 @@ int main(int argc, char *argv[])
             2, 6, 8,
             2, 8, 4).finished().array() - 1;
 
-        int subNb = 5;
+        int subNb = 1;
         for (int i = 0; i < subNb; i++) {
             MatrixXd V_sub(mesh.V.rows(), mesh.V.cols());
             MatrixXi F_sub(mesh.F.rows(), mesh.F.cols());

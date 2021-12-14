@@ -53,7 +53,7 @@ TestParam::TestParam(int cubeSubdivision, std::vector<int> _fixedCPindex, std::v
         mesh.F = F_sub;
     }
 
-    // Complete the meshes initialistation & Starts the Test
+    // Complete the meshes initialization & Start the Test
     ExecuteTest();
 }
 TestParam::TestParam(char filePath[], std::vector<int> _fixedCPindex, std::vector<int> _movedCPindex, std::vector<Eigen::RowVector3d> _movedCPoffset) :
@@ -65,7 +65,7 @@ TestParam::TestParam(char filePath[], std::vector<int> _fixedCPindex, std::vecto
 
 void TestParam::ExecuteTest()
 {
-    // Complete the mesh initialisation : add all needed control points
+    // Complete the mesh initialization : add all needed control points
     mesh.computeL_W_N();
     for (const auto& i : fixedCPindex)
         mesh.addControlPoint(i);

@@ -216,8 +216,6 @@ MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init
         new_V = laplacian_init(mesh);
         //std::cout << "Initiated with laplacian" << std::endl;
     }
-    
-    //MatrixXd new_V = previous_V;
 
     float old_energy = 0;
     float new_energy = 0;
@@ -260,10 +258,6 @@ MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init
 
             // Store Ri
             R[i] = Ri;
-
-            // DEBUG
-            /*std::cout << "Ri" << std::endl;
-            std::cout << Ri << std::endl;*/
         }
 
         // Find optimal p'
@@ -281,7 +275,6 @@ MatrixXd arap(const Mesh& mesh, const int& kmax, const EInitialisationType& init
         k++;
     } while (k < kmax && abs(old_energy - new_energy) > tol);
 
-    //std::cout << k << std::endl;
     if (outInterationNumber != nullptr)
         *outInterationNumber = k;
     if (outFinalEnergy != nullptr)
