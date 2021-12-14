@@ -65,14 +65,6 @@ MatrixXd laplacian_init(const Mesh& mesh) {
         }
     }
 
-    std::cout << "{";
-    for (const ControlPoint& c : C) {
-        std::cout << c.vertexIndexInMesh << ": " << c.wantedVertexPosition << std::endl;
-    }
-    std::cout << "}" << std::endl;
-
-    std::cout << new_V << std::endl;
-
     return new_V;
     #undef V
     #undef W
