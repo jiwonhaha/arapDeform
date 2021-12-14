@@ -11,7 +11,7 @@
 
 void performARAP(Mesh& mesh, const EInitialisationType& initialisationType, igl::opengl::glfw::Viewer& viewer, const InterfaceManager& interfaceManager)
 {
-    mesh.V = arap(mesh.V, mesh.F, mesh.getControlPoints(), 100, initialisationType);
+    mesh.V = arap(mesh, 100, initialisationType);
     interfaceManager.displaySelectedPoints(viewer, mesh);
     viewer.data().set_mesh(mesh.V, mesh.F);
 }
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     EInitialisationType initialisationType = EInitialisationType::e_LastFrame;
    
 
-    // Find one-ring neighbors
+    /*// Find one-ring neighbors
     find_neighbors(mesh.V, mesh.F);  
 
     // Compute weights
@@ -84,7 +84,9 @@ int main(int argc, char *argv[])
 
     // Precompute Laplacian-Beltrami matrix
     std::vector<ControlPoint> C = mesh.getControlPoints();
-    compute_laplacian_matrix(C);
+    compute_laplacian_matrix(C);*/
+
+    mesh.computeL_W_N();
 
 
     // Setup the interface
