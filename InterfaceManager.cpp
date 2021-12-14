@@ -242,12 +242,12 @@ void InterfaceManager::onKeyPressed(igl::opengl::glfw::Viewer& viewer, Mesh& mes
     }
     else if (key == '1')
     {
-        std::cout << "ARAP Initialisation set to : \t\tLast Frame" << std::endl;
+        std::cout << "ARAP Initialization set to : \t\tLast Frame" << std::endl;
         initType = EInitialisationType::e_LastFrame;
     }
     else if (key == '2')
     {
-        std::cout << "ARAP Initialisation set to : \t\tLaplace intialisation" << std::endl;
+        std::cout << "ARAP Initialization set to : \t\tLaplace intialisation" << std::endl;
         initType = EInitialisationType::e_Laplace;
     }
     else if (key == 'G')
@@ -293,7 +293,7 @@ void InterfaceManager::displayKeyBindOnConsole()
     std::cout << "\n\nAs-Rigid-As-Posible Interface usage:\n";
     std::cout << "  A,a     Starts an ARAP deformation (Key Q,q on azerty keyboards)\n";
     std::cout << "  1,&     Set the ARAP intialisation method on 'Last Frame'\n";
-    std::cout << "  2,é     Set the ARAP intialisation method on 'Laplacian'\n";
+    std::cout << "  2,ï¿½     Set the ARAP intialisation method on 'Laplacian'\n";
     std::cout << "  G,g     Toggle interface mode between selection and Grabing\n\n";
 
     std::cout << "\t\t--- Selection Mode ---\n";
