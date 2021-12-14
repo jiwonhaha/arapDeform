@@ -148,17 +148,9 @@ int main(int argc, char *argv[])
     EInitialisationType initialisationType = EInitialisationType::e_LastFrame;
    
 
-    /*// Find one-ring neighbors
-    find_neighbors(mesh.V, mesh.F);  
-
-    // Compute weights
-    compute_edges_weight(mesh.V, mesh.F);
-
-    // Precompute Laplacian-Beltrami matrix
-    std::vector<ControlPoint> C = mesh.getControlPoints();
-    compute_laplacian_matrix(C);*/
 
     mesh.computeL_W_N();
+    const Eigen::MatrixXd V_save = mesh.V;
 
 
     // Setup the interface
@@ -189,12 +181,21 @@ int main(int argc, char *argv[])
     {
         return interfaceManager.onMouseMoved(viewer, mesh, needToPerformArap, initialisationType);
     };
-    viewer.callback_key_down = [&interfaceManager, &mesh, &needToPerformArap, &initialisationType](igl::opengl::glfw::Viewer& viewer, unsigned char key, int modifier)->bool
+    viewer.callback_key_down = [&interfaceManager, &mesh, &needToPerformArap, &initialisationType, &V_save](igl::opengl::glfw::Viewer& viewer, unsigned char key, int modifier)->bool
     {
         bool removedCP = false;
         interfaceManager.onKeyPressed(viewer, mesh, key, modifier & 0x00000001, needToPerformArap, initialisationType, removedCP);
         if (removedCP)
-            performARAP(mesh, EInitialisationType::e_Laplace, viewer, interfaceManager);
+        {
+            if (mesh.getControlPointCount() == 0)
+            {
+                mesh.V = V_save;
+                interfaceManager.displaySelectedPoints(viewer, mesh);
+                viewer.data().set_mesh(mesh.V, mesh.F);
+            }
+            else
+                performARAP(mesh, EInitialisationType::e_Laplace, viewer, interfaceManager);
+        }
 
         return false;
     };
