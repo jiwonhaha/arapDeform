@@ -1,5 +1,7 @@
 # As-Rigid-As-Possible project
 
+https://user-images.githubusercontent.com/81630925/204822066-1e2a16cc-415e-4bf0-9e3c-15358ed2c952.mp4
+
 ## Abstract
 
 The As-Rigid-As-Possible (or in short ARAP) is a way to deform meshes using control points that preserves as much as it can the intial shape of the mesh.
