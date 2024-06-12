@@ -1,5 +1,9 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/readOFF.h>
+#include <igl/readPLY.h>  // Add this line
+#include <igl/readOBJ.h>  // Add this line
+#include <igl/writeOFF.h>
+#include <igl/writePLY.h> // Add this line
 #include <igl/upsample.h>
 #include <igl/arap.h>
 #include "ARAPSolver.h"
@@ -7,8 +11,9 @@
 #include "InterfaceManager.h"
 #include "TestARAP.h"
 
-//#define TEST
+#include <string>
 
+// Other includes...
 
 void performARAP(Mesh& mesh, const EInitialisationType& initialisationType, igl::opengl::glfw::Viewer& viewer, const InterfaceManager& interfaceManager)
 {
@@ -17,8 +22,7 @@ void performARAP(Mesh& mesh, const EInitialisationType& initialisationType, igl:
     viewer.data().set_mesh(mesh.V, mesh.F);
 }
 
-
-#ifdef  TEST
+#ifdef TEST
 
 int main(int argc, char* argv[])
 {
@@ -27,86 +31,106 @@ int main(int argc, char* argv[])
     TestParam test0 = TestParam(0,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(0.1,0.1,0.1)}
+        { Eigen::RowVector3d(0.1, 0.1, 0.1) }
     );
     TestParam test1 = TestParam(1,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(0.1,0.1,0.1) }
+        { Eigen::RowVector3d(0.1, 0.1, 0.1) }
     );
     TestParam test2 = TestParam(2,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(0.1,0.1,0.1) }
+        { Eigen::RowVector3d(0.1, 0.1, 0.1) }
     );
     TestParam test3 = TestParam(3,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(0.1,0.1,0.1) }
+        { Eigen::RowVector3d(0.1, 0.1, 0.1) }
     );
     TestParam test4 = TestParam(4,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(0.1,0.1,0.1) }
+        { Eigen::RowVector3d(0.1, 0.1, 0.1) }
     );
     TestParam test5 = TestParam(5,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(0.1,0.1,0.1) }
+        { Eigen::RowVector3d(0.1, 0.1, 0.1) }
     );
 
     // Large displacement to study speed convergence and the number of iterations
     TestParam test6 = TestParam(0,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(1.0,0.,0.) }
+        { Eigen::RowVector3d(1.0, 0., 0.) }
     );
     TestParam test7 = TestParam(1,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(1.0,0.,0.) }
+        { Eigen::RowVector3d(1.0, 0., 0.) }
     );
     TestParam test8 = TestParam(2,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(1.0,0.,0.) }
+        { Eigen::RowVector3d(1.0, 0., 0.) }
     );
     TestParam test9 = TestParam(3,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(1.0,0.,0.) }
+        { Eigen::RowVector3d(1.0, 0., 0.) }
     );
     TestParam test10 = TestParam(4,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(1.0,0.,0.) }
+        { Eigen::RowVector3d(1.0, 0., 0.) }
     );
     TestParam test11 = TestParam(5,
         { 0 },
         { 7 },
-        { Eigen::RowVector3d(1.0,0.,0.) }
+        { Eigen::RowVector3d(1.0, 0., 0.) }
     );
 
     // Test on complex mesh
     /*TestParam test2 = TestParam("../data/cactus_small.off",
         { 0 },
         { 1 },
-        { Eigen::RowVector3d(0.1,0,0) }
+        { Eigen::RowVector3d(0.1, 0, 0) }
     );*/
 }
 
 #else
 
-
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     Mesh mesh = Mesh();
 
     if (argc > 1)
     {
-        std::cout << "Reading input file: " << argv[1] << std::endl;
-        igl::readOFF(argv[1], mesh.V, mesh.F);
-        std::cout << "Reading complete !" << std::endl;
+        std::string input_file = argv[1];
+        std::string extension = input_file.substr(input_file.find_last_of('.') + 1);
+
+        std::cout << "Reading input file: " << input_file << std::endl;
+
+        if (extension == "off")
+        {
+            igl::readOFF(input_file, mesh.V, mesh.F);
+        }
+        else if (extension == "ply")
+        {
+            igl::readPLY(input_file, mesh.V, mesh.F);
+        }
+        else if (extension == "obj")
+        {
+            igl::readOBJ(input_file, mesh.V, mesh.F);
+        }
+        else
+        {
+            std::cerr << "Unsupported file format: " << extension << std::endl;
+            return EXIT_FAILURE;
+        }
+        
+        std::cout << "Reading complete!" << std::endl;
     }
     else
     {
@@ -138,8 +162,8 @@ int main(int argc, char *argv[])
 
         int subNb = 3;
         for (int i = 0; i < subNb; i++) {
-            MatrixXd V_sub(mesh.V.rows(), mesh.V.cols());
-            MatrixXi F_sub(mesh.F.rows(), mesh.F.cols());
+            Eigen::MatrixXd V_sub(mesh.V.rows(), mesh.V.cols());
+            Eigen::MatrixXi F_sub(mesh.F.rows(), mesh.F.cols());
             igl::upsample(mesh.V, mesh.F, V_sub, F_sub);
 
             mesh.V = V_sub;
@@ -156,12 +180,10 @@ int main(int argc, char *argv[])
 
     bool needToPerformArap = false;
     EInitialisationType initialisationType = EInitialisationType::e_LastFrame;
-   
 
     // Initialize neighbors, weights and Laplace-Beltrami matrix
     mesh.computeL_W_N();
     const Eigen::MatrixXd V_save = mesh.V;
-
 
     // Setup the interface
     std::cout << "" << std::endl;
@@ -207,9 +229,19 @@ int main(int argc, char *argv[])
                 performARAP(mesh, EInitialisationType::e_Laplace, viewer, interfaceManager);
         }
 
+        // Save the mesh when 'S' key is pressed
+        if (key == 'S')
+        {
+            std::string output_file_off = "deformed_mesh.off";
+            std::string output_file_ply = "deformed_mesh.ply";
+            igl::writeOFF(output_file_off, mesh.V, mesh.F);
+            igl::writePLY(output_file_ply, mesh.V, mesh.F);
+            std::cout << "Deformed mesh saved to " << output_file_off << " and " << output_file_ply << std::endl;
+        }
+
         return false;
     };
-    
+
     // Display Key binding for our interface
     InterfaceManager::displayKeyBindOnConsole();
 
@@ -219,4 +251,4 @@ int main(int argc, char *argv[])
     viewer.launch();
 }
 
-#endif //  TEST
+#endif // TEST
